@@ -80,13 +80,13 @@ let imgIndex = 0;
 htmlBody = htmlBody.replace(/<img[^>]*>/g, (match) => {
   if (imgIndex < boundingBoxes.length) {
     const box = boundingBoxes[imgIndex];
-    if (box.uploadedUrl) {
+    if (box?.uploadedUrl) {
       imgIndex++;
       return match
-        .replace(/src=["'][^"']*["']/, `src="${box.uploadedUrl}"`) // استبدال مصدر الصورة
-        .replace(/style=["'][^"']*["']/, '') // إزالة أي ستايل موجود
-        .replace(/>$/, ` style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover;">`) // إضافة الأبعاد
-        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`) ; // تحديث النص البديل
+        .replace(/src=["'][^"']*["']/, `src="${box.uploadedUrl}"`)
+        .replace(/style=["'][^"']*["']/, '')
+        .replace(/>$/, ` style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover;">`)
+        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`);
     }
   }
   return match;
