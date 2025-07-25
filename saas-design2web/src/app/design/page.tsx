@@ -338,12 +338,12 @@ export default function Design2WebApp() {
           try {
             userDoc = await getDoc(userDocRef);
             break;
-          } catch (err) {
-            if (err.code === 'unavailable') {
+          } catch (error: unknown) {
+            if (isFirebaseError(error) && error.code === 'unavailable') {
               retries--;
               await new Promise(resolve => setTimeout(resolve, 1000));
             } else {
-              throw err;
+              throw error;
             }
           }
         }
