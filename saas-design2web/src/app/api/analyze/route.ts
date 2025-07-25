@@ -7,6 +7,7 @@ import { sanitizeInput, logSecurityEvent, getClientIP } from "@/lib/security";
 declare var process: {
   env: {
     GEMINI_API_KEY?: string;
+    NODE_ENV?: string;
   };
 };
 
