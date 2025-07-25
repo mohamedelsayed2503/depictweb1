@@ -303,11 +303,6 @@ const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0 }
 };
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-  hover: { scale: 1.04, boxShadow: "0 8px 32px 0 rgba(136,84,255,0.25)" }
-};
 const errorVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: { opacity: 1, y: 0 },
