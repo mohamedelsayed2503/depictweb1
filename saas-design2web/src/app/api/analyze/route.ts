@@ -200,15 +200,15 @@ ${sanitizedJs || ''}
 
     return NextResponse.json(data);
     
-  } catch (error: any) {
+  } catch (error) {
     // Log error without exposing sensitive information
     logSecurityEvent('API_ERROR', {
-      error: error.message || 'Unknown error',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error && process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, clientIP);
     
     console.error('[API Error]', {
-      message: error.message,
+      message: error instanceof Error ? error.message : String(error),
       clientIP,
       timestamp: new Date().toISOString()
     });
