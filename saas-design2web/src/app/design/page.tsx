@@ -313,12 +313,6 @@ export default function Design2WebApp() {
   const router = useRouter();
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [firebaseReady, setFirebaseReady] = useState(true);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  useEffect(() => {
-    setTimeout(() => setShowInstructions(true), 1300);
-    setTimeout(() => setShowResults(true), 1600);
-  }, []);
   useEffect(() => {
     const authInstance: Auth | undefined = auth;
     const dbInstance: Firestore | undefined = db;
