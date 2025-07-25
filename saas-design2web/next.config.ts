@@ -35,16 +35,6 @@ const nextConfig: NextConfig = {
     return config;
   },
   
-  // Experimental features for security
-  experimental: {
-    serverExternalPackages: ['@google/genai'],
-  },
-  
-  // تعطيل فشل البناء بسبب أخطاء ESLint
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
   // Headers for additional security
   async headers() {
     return [
@@ -86,6 +76,11 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
     ];
+  },
+
+  // تعطيل فشل البناء بسبب أخطاء ESLint
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 
