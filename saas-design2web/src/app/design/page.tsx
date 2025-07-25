@@ -404,8 +404,8 @@ export default function Design2WebApp() {
       try {
         userDoc = await getDoc(userDocRef);
         break;
-      } catch (err) {
-        if (err.code === 'unavailable') {
+      } catch (err: unknown) {
+        if (isFirebaseError(err) && err.code === 'unavailable') {
           retries--;
           await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
