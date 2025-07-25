@@ -21,18 +21,7 @@ function isFirebaseError(error: unknown): error is FirebaseError {
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
 
-// Placeholder for detected image areas (to be replaced by AI results)
-type DetectedImageArea = {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  filename?: string;
-  uploadedUrl?: string;
-};
-
-type BoundingBox = {
+interface BoundingBox {
   id: string;
   x: number;
   y: number;
@@ -435,13 +424,9 @@ export default function Design2WebApp() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [zoom, setZoom] = useState(1);
   const [analyzed, setAnalyzed] = useState(false);
-  const [detectedImages, setDetectedImages] = useState<DetectedImageArea[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<{ html: string; css: string; js: string } | null>(null);
-  const [rawAIResponse, setRawAIResponse] = useState<string>("");
-  const [showRaw, setShowRaw] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [codeVersions, setCodeVersions] = useState<{ html: string; css: string; js: string }[]>([]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(-1);
@@ -451,14 +436,7 @@ export default function Design2WebApp() {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
-  const [resizing, setResizing] = useState<{ id: string; corner: string } | null>(null);
   const [boxLabelCounter, setBoxLabelCounter] = useState(1);
-  const [manualMode, setManualMode] = useState(false);
-  const [adjustments, setAdjustments] = useState<{ [key: string]: { x: number; y: number; width: number; height: number } }>(
-    {}
-  );
-  const [showComparison, setShowComparison] = useState(false);
-  const [comparisonOpacity, setComparisonOpacity] = useState(0.5);
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
@@ -497,19 +475,18 @@ export default function Design2WebApp() {
               images.forEach(img => {
                 const imgElement = img as HTMLImageElement;
                 if (imgElement.src.includes(box.filename)) {
-                  imgElement.src = box.uploadedUrl!;
-                  imgElement.style.width = `${Math.round(box.width)}px`;
-                  imgElement.style.height = `${Math.round(box.height)}px`;
-                  imgElement.style.objectFit = 'cover';
-                  imgElement.onerror = () => {
-                    console.log(`Failed to load image: ${box.filename}`);
-                    imgElement.style.border = '2px dashed red';
-                    imgElement.style.backgroundColor = '#fee';
-                    imgElement.alt = `Failed to load: ${box.filename}`;
-                  };
-                  imgElement.onload = () => {
-                    console.log(`Successfully loaded image: ${box.filename}`);
-                  };
+                  if (box.uploadedUrl) {
+                    imgElement.src = box.uploadedUrl;
+                    imgElement.style.width = `${Math.round(box.width)}px`;
+                    imgElement.style.height = `${Math.round(box.height)}px`;
+                    imgElement.style.objectFit = 'cover';
+                    imgElement.onerror = () => {
+                      setError(`Failed to load image: ${box.filename}`);
+                      imgElement.style.border = '2px dashed red';
+                      imgElement.style.backgroundColor = '#fee';
+                      imgElement.alt = `Failed to load: ${box.filename}`;
+                    };
+                  }
                 }
               });
             }
@@ -526,7 +503,6 @@ export default function Design2WebApp() {
 
     setLoading(true);
     setError(null);
-    setRawAIResponse("");
 
     try {
       const currentCode = codeVersions[currentVersionIndex];
@@ -534,9 +510,17 @@ export default function Design2WebApp() {
         throw new Error("No current code version available for modification.");
       }
 
-      const modificationPrompt = `You are a world-class expert in responsive, pixel-perfect web design. Your task is to analyze the provided HTML, CSS, and JavaScript code, and then apply the following modification: "${modificationRequest}". Generate production-ready, fully responsive, mobile-first HTML, CSS, and JavaScript code that incorporates this modification.\n\n**Critical requirements:**
-
-1. **Maintain Structure & Layout:**
+      // Send request to backend
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: modificationRequest,
+          html: currentCode.html,
+          css: currentCode.css,
+          js: currentCode.js,
+        }),
+      });
    - Keep the existing layout and structure, only apply the requested modification
    - Preserve the visual hierarchy and element relationships
    - Maintain the original spacing and positioning system
