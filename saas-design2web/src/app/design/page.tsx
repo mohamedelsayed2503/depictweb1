@@ -313,14 +313,12 @@ export default function Design2WebApp() {
   const router = useRouter();
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [firebaseReady, setFirebaseReady] = useState(true);
-  const [showDesc, setShowDesc] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   
   const [showInstructions, setShowInstructions] = useState(false);
   const [showResults, setShowResults] = useState(false);
   useEffect(() => {
-    setTimeout(() => setShowDesc(true), 400);
     setTimeout(() => setShowUpload(true), 700);
     setTimeout(() => setShowCanvas(true), 1000);
     setTimeout(() => setShowInstructions(true), 1300);
