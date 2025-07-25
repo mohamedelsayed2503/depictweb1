@@ -166,9 +166,9 @@ ${sanitizedJs || ''}
       // إذا لم يوجد CSS منفصل، حاول استخراج <style> من HTML
       if (!extractedCss && extractedHtml) {
         const styleMatch = extractedHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-        if (styleMatch) {
+        if (styleMatch && styleMatch[1]) {
           extractedCss = styleMatch[1].trim();
-          extractedHtml = extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
+          extractedHtml = extractedHtml ? extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '') : "";
         }
       }
       // إذا لم يوجد أي شيء، حاول التقاط أول كود JSON أو CSS أو JS كسطر واحد
