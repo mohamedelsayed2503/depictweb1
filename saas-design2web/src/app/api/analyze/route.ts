@@ -160,9 +160,9 @@ ${sanitizedJs || ''}
       const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
       const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
       const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
-      extractedHtml = htmlMatch ? htmlMatch[1].trim() : "";
-      extractedCss = cssMatch ? cssMatch[1].trim() : "";
-      extractedJs = jsMatch ? jsMatch[1].trim() : "";
+      extractedHtml = htmlMatch && htmlMatch[1] ? htmlMatch[1].trim() : "";
+      extractedCss = cssMatch && cssMatch[1] ? cssMatch[1].trim() : "";
+      extractedJs = jsMatch && jsMatch[1] ? jsMatch[1].trim() : "";
       // إذا لم يوجد CSS منفصل، حاول استخراج <style> من HTML
       if (!extractedCss && extractedHtml) {
         const styleMatch = extractedHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
