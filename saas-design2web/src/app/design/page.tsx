@@ -313,13 +313,11 @@ export default function Design2WebApp() {
   const router = useRouter();
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [firebaseReady, setFirebaseReady] = useState(true);
-  const [showUpload, setShowUpload] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   
   const [showInstructions, setShowInstructions] = useState(false);
   const [showResults, setShowResults] = useState(false);
   useEffect(() => {
-    setTimeout(() => setShowUpload(true), 700);
     setTimeout(() => setShowCanvas(true), 1000);
     setTimeout(() => setShowInstructions(true), 1300);
     setTimeout(() => setShowResults(true), 1600);
@@ -1674,7 +1672,7 @@ export default function Design2WebApp() {
           <label className="w-full flex flex-col items-center cursor-pointer">
             <input type="file" accept="image/png, image/jpeg" onChange={handleImageUpload} className="hidden" />
             <span className="px-8 py-3 rounded-xl font-bold text-white text-base sm:text-xl shadow-lg transition-all duration-200 mb-2 button-animate" style={{background: "linear-gradient(90deg, #ff6fd8 0%, #8854ff 100%)", boxShadow: "0 2px 16px 0 rgba(136,84,255,0.15)", border: "none"}}>Choose Image</span>
-            <span className="text-gray-300 text-xs sm:text-sm fade-in${showUpload ? ' visible' : ''}">{imageFile ? imageFile.name : "No file chosen"}</span>
+            <span className="text-gray-300 text-xs sm:text-sm fade-in${showCanvas ? ' visible' : ''}">{imageFile ? imageFile.name : "No file chosen"}</span>
           </label>
           <div className="mt-4 w-full flex items-center justify-center">
             <label className="flex items-center cursor-pointer group">
