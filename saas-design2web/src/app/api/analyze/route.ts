@@ -38,7 +38,7 @@ function validateRequest(data: any): data is AnalyzeRequest {
   }
   
   if (data.imageBase64 && data.imageBase64.length > 10 * 1024 * 1024) {
-    return false; // Limit image size to 10MB
+    return false; // Limit image size to 10MBنع
   }
   
   return true;
