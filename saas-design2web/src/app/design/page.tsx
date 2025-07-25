@@ -8,6 +8,16 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
+import { FirebaseError } from 'firebase/app';
+
+function isFirebaseError(error: unknown): error is FirebaseError {
+  return (
+    error instanceof FirebaseError ||
+    (typeof error === 'object' && 
+     error !== null && 
+     'code' in error)
+  );
+}
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
 
