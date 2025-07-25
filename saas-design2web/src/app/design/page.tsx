@@ -72,7 +72,7 @@ const MemoizedPreview = memo(({ html, css, js, boundingBoxes }: {
   let htmlBody = previewHtml;
   const bodyMatch = previewHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   if (bodyMatch) {
-    htmlBody = bodyMatch[1];
+    htmlBody = bodyMatch && bodyMatch[1] ? bodyMatch[1] : "";
   }
 
   // 2. استبدل الصور المرفوعة وأضف أبعادها حسب الترتيب
