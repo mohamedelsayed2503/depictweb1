@@ -3,7 +3,6 @@
 import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { Rnd } from "react-rnd";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
