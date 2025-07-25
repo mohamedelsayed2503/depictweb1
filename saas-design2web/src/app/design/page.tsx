@@ -521,66 +521,9 @@ export default function Design2WebApp() {
           js: currentCode.js,
         }),
       });
-   - Keep the existing layout and structure, only apply the requested modification
-   - Preserve the visual hierarchy and element relationships
-   - Maintain the original spacing and positioning system
-   - Do not break existing responsive behavior
 
-2. **Responsive Design Enhancement:**
-   - The generated code must be fully responsive and look perfect on all screen sizes (desktop, tablet, mobile)
-   - Use mobile-first approach with proper breakpoints: mobile (320px+), tablet (768px+), desktop (1024px+)
-   - Ensure content adapts smoothly across all screen sizes
-   - No horizontal overflow or cramped content on any device
-   - Use modern CSS techniques: flexbox, grid, clamp(), min(), max(), container queries
-
-3. **Spacing & Layout Consistency:**
-   - Maintain consistent spacing between elements as in the original design
-   - Preserve the visual balance and composition
-   - Use CSS Grid gap, Flexbox gap, and proper margin/padding values
-   - Ensure proper whitespace and breathing room between sections
-   - Keep the same alignment (left, center, right) as the original
-
-4. **Element Positioning & Sizing:**
-   - Maintain exact positioning of elements relative to each other
-   - Preserve aspect ratios and proportions
-   - Scale elements proportionally across breakpoints
-   - Use object-fit appropriately for images
-   - Ensure proper touch targets for interactive elements (min 44px)
-
-5. **Modern CSS Techniques:**
-   - Use CSS Grid for complex layouts and alignment
-   - Use Flexbox for component-level layouts
-   - Use CSS Container Queries for component-based responsive design
-   - Implement fluid typography with clamp() for text scaling
-   - Use CSS custom properties (variables) for consistent spacing
-   - Use relative units (rem, em, %, vw, vh) for responsive sizing
-
-6. **Clean Code & Performance:**
-   - Use modern CSS techniques (media queries, flexbox, grid, clamp, etc.) to ensure the layout adapts smoothly
-   - Optimize for performance with efficient CSS
-   - Use semantic HTML elements
-   - Implement proper focus states for interactive elements
-   - Ensure proper color contrast ratios
-
-7. **No Breaking Changes:**
-   - Ensure the modification doesn't break existing functionality
-   - Maintain accessibility features
-   - Preserve existing interactive behaviors
-   - Keep the same visual design language
-
-8. **Cross-Browser Compatibility:**
-   - Use modern CSS with proper fallbacks
-   - Ensure graceful degradation
-   - Test layout on different browsers
-
-**Output format - Return ONLY this JSON object, no other text:**
-{
-  "html": "Full HTML code only, no <style> or <script> tags, no inline CSS or JS.",
-  "css": "Full CSS code only, no HTML or JS. Must include all responsive rules and breakpoints.",
-  "js": "Full JavaScript code only, if needed for interactivity (empty string if not needed)."
-}
-
-**CRITICAL:** Return ONLY the JSON object above. Do NOT include any explanations, Markdown, or extra text. The JSON must be valid and parseable.`;
+      if (!res.ok) throw new Error("AI code modification failed");
+      const data = await res.json();
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -657,11 +600,11 @@ export default function Design2WebApp() {
             // Remove extra quotes if present
             (['html', 'css', 'js'] as const).forEach((key) => {
             if (
-              typeof code![key] === 'string' &&
-              code![key].startsWith('"') &&
-              code![key].endsWith('"')
+              code && typeof code[key] === 'string' &&
+              code[key].startsWith('"') &&
+              code[key].endsWith('"')
             ) {
-              code![key] = code![key].slice(1, -1).replace(/\\"/g, '"');
+              code[key] = code[key].slice(1, -1).replace(/\\"/g, '"');
             }
           });
             
