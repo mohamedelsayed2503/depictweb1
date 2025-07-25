@@ -376,9 +376,9 @@ export default function Design2WebApp() {
             setUsageExceeded(true); // Assume exceeded if can't create
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Firestore error:", error);
-        if (error.code === 'unavailable') {
+        if (isFirebaseError(error) && error.code === 'unavailable') {
           setError('You appear to be offline. Please check your internet connection.');
         }
         // Optionally set an error state or notify user
