@@ -52,7 +52,11 @@ export async function POST(req: NextRequest) {
     try {
       requestData = await req.json();
     } catch (error) {
-      logSecurityEvent('INVALID_JSON_REQUEST', { error: error.message }, clientIP);
+      logSecurityEvent(
+        'INVALID_JSON_REQUEST',
+        { error: error instanceof Error ? error.message : String(error) },
+        clientIP
+      );
       return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
     }
     
