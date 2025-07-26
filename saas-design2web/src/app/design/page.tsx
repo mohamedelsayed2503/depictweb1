@@ -440,9 +440,7 @@ export default function Design2WebApp() {
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
-  // @ts-expect-error - Temporarily suppressing unused variable warning until implementation is complete
   const [detectedImages, setDetectedImages] = useState<Array<{ id: string; filename?: string; uploadedUrl?: string }>>([]);
-  const [rawAIResponse, setRawAIResponse] = useState<string>("");
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
@@ -708,9 +706,15 @@ export default function Design2WebApp() {
       reader.onload = (ev) => setImage(ev.target?.result as string);
       reader.readAsDataURL(file);
       setAnalyzed(false);
-      setDetectedImages([]);
       setError(null);
       setGeneratedCode(null);
+      
+      // Reset detected images and add initial placeholder
+      setDetectedImages([{
+        id: 'initial',
+        filename: file.name,
+        uploadedUrl: URL.createObjectURL(file)
+      }]);
     }
   }
 
@@ -787,8 +791,7 @@ export default function Design2WebApp() {
         // console.log("Full API Response:", data);
         
         // Show the raw AI response for debugging
-        const text = data.choices?.[0]?.message?.content || "";
-        // console.log("AI Response Text:", text);
+        const responseContent = data.choices?.[0]?.message?.content || "";
         
         // Try to parse the code from the AI response
         let code: { html: string; css: string; js: string } | null = null;
