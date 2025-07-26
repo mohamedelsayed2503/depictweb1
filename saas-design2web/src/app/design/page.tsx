@@ -440,7 +440,8 @@ export default function Design2WebApp() {
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
-  const [detectedImages, setDetectedImages] = useState<any[]>([]);
+  // @ts-expect-error - Temporarily suppressing unused variable warning until implementation is complete
+  const [detectedImages, setDetectedImages] = useState<Array<{ id: string; filename?: string; uploadedUrl?: string }>>([]);
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
