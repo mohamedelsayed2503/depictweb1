@@ -565,7 +565,7 @@ export default function Design2WebApp() {
             });
             
             // Also fix unescaped quotes in HTML content
-            jsonStr = jsonStr.replace(/"html":"([\s\S]*?)"/g, (match: string, htmlContent: string) => {
+            jsonStr = jsonStr.replace(/"html":"([\s\S]*?)"/g, (_match: string, htmlContent: string) => {
               // Escape quotes within the HTML content
               const escapedHtml = htmlContent.replace(/"/g, '\\"');
               return `"html":"${escapedHtml}"`;
