@@ -468,10 +468,11 @@ export default function Design2WebApp() {
       // Force re-render of preview when images are uploaded
       const timer = setTimeout(() => {
         const iframe = document.querySelector('iframe');
-        if (iframe && iframe.contentDocument) {
+        const iframeDoc = iframe?.contentDocument;
+        if (iframe && iframeDoc) {
           boundingBoxes.forEach(box => {
             if (box.filename && box.uploadedUrl) {
-              const images = iframe.contentDocument.querySelectorAll('img');
+              const images = iframeDoc.querySelectorAll('img');
               images.forEach(img => {
                 const imgElement = img as HTMLImageElement;
                 if (imgElement.src.includes(box.filename)) {
