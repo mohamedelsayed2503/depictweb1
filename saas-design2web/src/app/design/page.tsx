@@ -705,7 +705,6 @@ export default function Design2WebApp() {
       reader.onload = (ev) => setImage(ev.target?.result as string);
       reader.readAsDataURL(file);
       setAnalyzed(false);
-      setDetectedImages([]);
       setError(null);
       setGeneratedCode(null);
     }
