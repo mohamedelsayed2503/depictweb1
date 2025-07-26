@@ -496,6 +496,7 @@ export default function Design2WebApp() {
     
       return () => clearTimeout(timer);
     }
+    return () => {}; // Return empty cleanup function for cases where condition is not met
   }, [boundingBoxes, generatedCode]);
 
   async function handleAnalyzeModification(modificationRequest: string) {
