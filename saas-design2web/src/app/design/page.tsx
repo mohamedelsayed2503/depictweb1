@@ -475,7 +475,7 @@ export default function Design2WebApp() {
               const images = iframeDoc.querySelectorAll('img');
               images.forEach(img => {
                 const imgElement = img as HTMLImageElement;
-                if (imgElement.src.includes(box.filename)) {
+                if (box.filename && imgElement.src.includes(box.filename)) {
                   if (box.uploadedUrl) {
                     imgElement.src = box.uploadedUrl;
                     imgElement.style.width = `${Math.round(box.width)}px`;
