@@ -558,7 +558,7 @@ export default function Design2WebApp() {
             console.log("JSON parsing failed, attempting to fix...");
             
             // Fix unescaped quotes in CSS content
-            jsonStr = jsonStr.replace(/"css":"([\s\S]*?)"/g, (match: string, cssContent: string) => {
+            jsonStr = jsonStr.replace(/"css":"([\s\S]*?)"/g, (_match: string, cssContent: string) => {
               // Escape quotes within the CSS content
               const escapedCss = cssContent.replace(/"/g, '\\"');
               return `"css":"${escapedCss}"`;
