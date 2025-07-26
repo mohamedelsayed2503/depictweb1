@@ -788,7 +788,6 @@ export default function Design2WebApp() {
         // Show the raw AI response for debugging
         const text = data.choices?.[0]?.message?.content || "";
         // console.log("AI Response Text:", text);
-        setRawAIResponse(text);
         
         // Try to parse the code from the AI response
         let code: { html: string; css: string; js: string } | null = null;
