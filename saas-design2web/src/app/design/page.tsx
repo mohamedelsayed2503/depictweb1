@@ -782,9 +782,6 @@ export default function Design2WebApp() {
         // Debug: طباعة الـ response كامل
         // console.log("Full API Response:", data);
         
-        // Show the raw AI response for debugging
-        const responseContent = data.choices?.[0]?.message?.content || "";
-        
         // Try to parse the code from the AI response
         let code: { html: string; css: string; js: string } | null = null;
         try {
