@@ -319,74 +319,16 @@ export default function Design2WebApp() {
       setFirebaseReady(false);
       setError("فشل الاتصال بـ Firebase. يرجى إعادة تحميل الصفحة أو التأكد من الاتصال بالإنترنت.");
       return;
-    } else {
-      setFirebaseReady(true);
     }
-    const unsubscribe = authInstance.onAuthStateChanged(async (user) => {
-      if (!user) {
-        router.push("/home");
-        return;
-      }
-      try {
-        // Check daily usage
-        const today = new Date().toISOString().split('T')[0];
-        const userDocRef = doc(dbInstance, 'users', user.uid);
-        let userDoc;
-        let retries = 3;
-        while (retries > 0) {
-          try {
-            userDoc = await getDoc(userDocRef);
-            break;
-          } catch (error: unknown) {
-            if (isFirebaseError(error) && error.code === 'unavailable') {
-              retries--;
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } else {
-              throw error;
-            }
-          }
-        }
-        if (userDoc && userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.last_date === today) {
-            if (data.count >= 3) {
-              setUsageExceeded(true);
-            }
-          } else {
-            // Reset for new day
-            await setDoc(userDocRef, { last_date: today, count: 0 }, { merge: true });
-          }
-        } else {
-          // Create new document or handle failure
-          try {
-            await setDoc(userDocRef, { last_date: today, count: 0 });
-          } catch (createErr) {
-            console.error("Failed to create user document:", createErr);
-            setUsageExceeded(true); // Assume exceeded if can't create
-          }
-        }
-      } catch (error: unknown) {
-        console.error("Firestore error:", error);
-        if (isFirebaseError(error) && error.code === 'unavailable') {
-          setError('You appear to be offline. Please check your internet connection.');
-        }
-        // Optionally set an error state or notify user
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
+  }, []);
+
+  // ...existing code...
+
+  // Move incrementUsage logic to a separate async function
   async function incrementUsage() {
-    const authInstance: Auth | undefined = auth;
-    const dbInstance: Firestore | undefined = db;
-    if (!authInstance || !dbInstance) {
-      setFirebaseReady(false);
-      setError("فشل الاتصال بـ Firebase. يرجى إعادة تحميل الصفحة أو التأكد من الاتصال بالإنترنت.");
-      return false;
-    }
-    const user = authInstance.currentUser;
     if (!user) return false;
     const today = new Date().toISOString().split('T')[0];
-    const userDocRef = doc(dbInstance, 'users', user.uid);
+    const userDocRef = doc(db, 'users', user.uid);
     let userDoc;
     let retries = 3;
     while (retries > 0) {
@@ -420,6 +362,71 @@ export default function Design2WebApp() {
     }
     return false;
   }
+
+  return (
+    <>
+      {/* Header with logo */}
+      <motion.header
+        className="w-full fixed top-0 left-0 z-50 bg-transparent flex items-center justify-between h-24 px-12"
+        style={{backdropFilter: 'blur(4px)'}}
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 60, damping: 18 }}
+      >
+        <div className="flex items-center">
+          {/* Responsive logo: logo.png for desktop, logo-min.png for tablet/mobile */}
+          <picture>
+            <source srcSet="/logo-min.png" media="(max-width: 1023px)" />
+            <motion.img
+              src="/logo.png"
+              alt="Snappy AI Logo"
+              style={{ height: '150px', width: 'auto', display: 'block' }}
+              initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 14 }}
+            />
+          </picture>
+        </div>
+        {isLoggedIn && (
+          <div className="flex items-center gap-4">
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400/60 opacity-60 blur-sm cursor-not-allowed"
+              style={{ fontSize: '1.1rem', filter: 'blur(1px) grayscale(0.3)' }}
+              title="Connect GitHub (Coming Soon)"
+              disabled
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 10V7a4 4 0 10-8 0v3M5 10h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+              </svg>
+              <span className="hidden sm:inline">Connect GitHub</span>
+            </button>
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold shadow-lg hover:scale-105 hover:shadow-pink-500/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400/60"
+              style={{ fontSize: '1.1rem' }}
+              title="Logout"
+              onClick={async () => {
+                await signOut(auth!);
+                router.push("/home");
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+              </svg>
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        )}
+      </motion.header>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.7 }}
+        className="min-h-screen bg-gradient-to-b from-[#181824] via-[#2d1a3a] to-[#7b2ff2] flex flex-col items-center py-6 px-2 font-sans pt-36 md:pt-40"
+      >
+        {/* ...existing code... */}
+      </motion.div>
+    </>
+  );
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -1703,4 +1710,3 @@ export default function Design2WebApp() {
     </motion.div>
   </>
   );
-}
