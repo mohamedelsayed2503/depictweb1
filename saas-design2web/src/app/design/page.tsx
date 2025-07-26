@@ -511,7 +511,7 @@ export default function Design2WebApp() {
       }
 
       // Send request to backend
-      const res = await fetch("/api/analyze", {
+      const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -522,21 +522,8 @@ export default function Design2WebApp() {
         }),
       });
 
-      if (!res.ok) throw new Error("AI code modification failed");
-      const data = await res.json();
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: modificationRequest,
-          html: currentCode.html,
-          css: currentCode.css,
-          js: currentCode.js,
-        }),
-      });
-
-      if (!res.ok) throw new Error("AI code modification failed");
-      const data = await res.json();
+      if (!response.ok) throw new Error("AI code modification failed");
+      const data = await response.json();
 
       const text = data.choices?.[0]?.message?.content || "";
       setRawAIResponse(text);
