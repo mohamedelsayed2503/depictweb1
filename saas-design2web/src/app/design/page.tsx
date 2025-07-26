@@ -440,7 +440,6 @@ export default function Design2WebApp() {
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
-  const [detectedImages, setDetectedImages] = useState<Array<{ id: string; filename?: string; uploadedUrl?: string }>>([]);
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
@@ -708,13 +707,6 @@ export default function Design2WebApp() {
       setAnalyzed(false);
       setError(null);
       setGeneratedCode(null);
-      
-      // Reset detected images and add initial placeholder
-      setDetectedImages([{
-        id: 'initial',
-        filename: file.name,
-        uploadedUrl: URL.createObjectURL(file)
-      }]);
     }
   }
 
@@ -901,19 +893,6 @@ export default function Design2WebApp() {
         setError("Unknown error");
       }
       setLoading(false);
-    }
-  }
-
-  function handleHighResUpload(e: React.ChangeEvent<HTMLInputElement>, areaId: string) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setDetectedImages((prev) =>
-        prev.map((area) =>
-          area.id === areaId
-            ? { ...area, filename: file.name, uploadedUrl: URL.createObjectURL(file) }
-            : area
-        )
-      );
     }
   }
 
@@ -2019,7 +1998,7 @@ export default function Design2WebApp() {
                       setImageFile(null);
                       setZoom(1);
                       setAnalyzed(false);
-                      setDetectedImages([]);
+                      // Reset detected images is handled by boundingBoxes state
                       setLoading(false);
                       setError(null);
                       setGenerating(false);
