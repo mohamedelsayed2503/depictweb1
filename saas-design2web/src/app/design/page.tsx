@@ -442,6 +442,7 @@ export default function Design2WebApp() {
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
   // @ts-expect-error - Temporarily suppressing unused variable warning until implementation is complete
   const [detectedImages, setDetectedImages] = useState<Array<{ id: string; filename?: string; uploadedUrl?: string }>>([]);
+  const [rawAIResponse, setRawAIResponse] = useState<string>("");
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
