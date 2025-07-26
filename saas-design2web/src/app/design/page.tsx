@@ -440,7 +440,6 @@ export default function Design2WebApp() {
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
-  const [rawAIResponse, setRawAIResponse] = useState<string>("");
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
@@ -529,8 +528,6 @@ export default function Design2WebApp() {
       const data = await response.json();
 
       const text = data.choices?.[0]?.message?.content || "";
-      setRawAIResponse(text);
-
       let code: { html: string; css: string; js: string } | null = null;
       try {
         console.log("Raw AI response:", text);
@@ -730,7 +727,6 @@ export default function Design2WebApp() {
     if (!noImagesDesign && (boundingBoxes.length === 0 || !allBoxesHaveImages)) return;
     setLoading(true);
     setError(null);
-    setRawAIResponse("");
     try {
       // Convert design image to base64
       const reader = new FileReader();
