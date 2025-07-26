@@ -893,18 +893,7 @@ export default function Design2WebApp() {
     }
   }
 
-  async function handleGenerateWebsite() {
-    if (!imageFile || usageExceeded) return;
-    if (!(await incrementUsage())) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      // Convert image to base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageBase64 = (e.target?.result as string).split(",")[1];
-        // Compose the prompt for code generation
-        const prompt = `You are a world-class expert in responsive, pixel-perfect web design. Your task is to analyze the attached website design image and generate production-ready, fully responsive, mobile-first HTML, CSS, and JavaScript code that matches the design with 100% accuracy, pixel by pixel.\n\n**Critical requirements:**
+  // ZIP download with uploaded images
 
 1. **Language Matching:** Use the exact same language as the text in the design. If the design contains English text, return English. If the design contains Arabic text, return Arabic. If the design contains any other language, return that language. Never translate or change the language of the text.
 
