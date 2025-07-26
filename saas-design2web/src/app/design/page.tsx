@@ -440,6 +440,7 @@ export default function Design2WebApp() {
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
+  const [detectedImages, setDetectedImages] = useState<any[]>([]);
   
   // Animation states
   const [arrowHoverLeft, setArrowHoverLeft] = useState(false);
@@ -705,6 +706,7 @@ export default function Design2WebApp() {
       reader.onload = (ev) => setImage(ev.target?.result as string);
       reader.readAsDataURL(file);
       setAnalyzed(false);
+      setDetectedImages([]);
       setError(null);
       setGeneratedCode(null);
     }
