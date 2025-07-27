@@ -876,7 +876,7 @@ export default function Design2WebApp() {
             }
           } else {
             // No JSON found, try to extract HTML directly
-            console.log("No JSON match found, trying to extract HTML directly");
+
             const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
             const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
             const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
@@ -901,10 +901,9 @@ export default function Design2WebApp() {
                 css: cssCode,
                 js: jsCode
               };
-              console.log("Extracted HTML directly:", code);
+
           }
-        } catch (e) {
-          console.error("Code parsing error:", e);
+        } catch (error) {
           setError("Error parsing AI response. Check debug output below.");
         }
         if (code) {
@@ -957,161 +956,73 @@ export default function Design2WebApp() {
       reader.readAsDataURL(imageFile);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("API call error:", err);
         setError(err.message || "Unknown error");
       } else {
-        console.error("Unknown error");
+        setError("Unknown error");
+      }
+      setLoading(false);
+    }
+          }
+        } catch (error) {
+          setError("Error parsing AI response. Check debug output below.");
+        }
+        if (code) {
+          // إضافة ربط الـ CSS والـ JS تلقائياً إذا لم يكن موجوداً
+          let htmlWithLinks = code.html;
+          
+          // أضف رابط style.css إذا لم يكن موجوداً
+          if (!/href=["']style\.css["']/.test(htmlWithLinks)) {
+            htmlWithLinks = htmlWithLinks.replace(/<head[^>]*>/i, match => `${match}\n<link rel="stylesheet" href="style.css">`);
+          }
+          
+          // أضف script.js إذا لم يكن موجوداً
+          if (!/src=["']script\.js["']/.test(htmlWithLinks)) {
+            htmlWithLinks = htmlWithLinks.replace(/<\/body>/i, `  <script src="script.js"></script>\n<\/body>`);
+          }
+          
+          // إذا لم يكن هناك <head> أو <body>، أضفهم
+          if (!/<head[^>]*>/i.test(htmlWithLinks)) {
+            htmlWithLinks = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design to Web</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    ${htmlWithLinks}
+    <script src="script.js"></script>
+</body>
+</html>`;
+          }
+          
+          const codeWithLinks = {
+            ...code,
+            html: htmlWithLinks
+          };
+          
+          setGeneratedCode(codeWithLinks);
+        setAnalyzed(true);
+        setLoading(false);
+        
+        // حفظ النسخة الجديدة من الكود
+          setCodeVersions(prev => [...prev, codeWithLinks]);
+          setCurrentVersionIndex(prev => prev + 1);
+        } else {
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(imageFile);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message || "Unknown error");
+      } else {
         setError("Unknown error");
       }
       setLoading(false);
     }
   }
-
-  function handleHighResUpload(e: React.ChangeEvent<HTMLInputElement>, areaId: string) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setDetectedImages((prev) =>
-        prev.map((area) =>
-          area.id === areaId
-            ? { ...area, filename: file.name, uploadedUrl: URL.createObjectURL(file) }
-            : area
-        )
-      );
-    }
-  }
-
-  async function handleGenerateWebsite() {
-    if (!imageFile || usageExceeded) return;
-    if (!(await incrementUsage())) return;
-    setGenerating(true);
-    setError(null);
-    try {
-      // Convert image to base64
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageBase64 = (e.target?.result as string).split(",")[1];
-        // Compose the prompt for code generation
-        const prompt = `You are a world-class expert in responsive, pixel-perfect web design. Your task is to analyze the attached website design image and generate production-ready, fully responsive, mobile-first HTML, CSS, and JavaScript code that matches the design with 100% accuracy, pixel by pixel.\n\n**Critical requirements:**
-
-1. **Language Matching:** Use the exact same language as the text in the design. If the design contains English text, return English. If the design contains Arabic text, return Arabic. If the design contains any other language, return that language. Never translate or change the language of the text.
-
-2. **Element Positioning & Layout:**
-   - Every element must be placed in exactly the same position as in the design
-   - The layout and visual hierarchy must match the design pixel-for-pixel
-   - Do not shift, center, or reorder any element
-   - Use CSS Grid and Flexbox for precise positioning
-   - Ensure proper alignment (left, center, right) as shown in the design
-   - Maintain visual balance and composition
-
-3. **Spacing & Gaps (CRITICAL):**
-   - All spacing (margin, padding, gap) between elements and sections must be exactly as in the design
-   - No element should be too close or too far from another
-   - Maintain consistent, visually comfortable spacing everywhere
-   - If there is 32px between a heading and a section, use exactly 32px
-   - If a button is 24px below an image, use exactly 24px
-   - If two elements are side by side, the gap between them must match the design
-   - Use CSS Grid gap, Flexbox gap, and proper margin/padding values
-   - Ensure proper whitespace and breathing room between sections
-
-4. **Responsive Design (MOBILE-FIRST):**
-   - Code must be truly responsive and mobile-first
-   - Use modern CSS techniques: flexbox, grid, clamp(), min(), max(), container queries
-   - Implement proper breakpoints: mobile (320px+), tablet (768px+), desktop (1024px+), large desktop (1440px+)
-   - Ensure content adapts smoothly across all screen sizes
-   - No horizontal overflow or cramped content on any device
-   - Use relative units (rem, em, %, vw, vh) for responsive sizing
-   - Implement fluid typography with clamp() for text scaling
-   - Use CSS Grid auto-fit/auto-fill for responsive layouts
-   - Implement proper touch targets (min 44px) for mobile devices
-   - Use CSS Container Queries for component-based responsive design
-   - Ensure proper spacing and padding adjustments for different screen sizes
-
-5. **Element Sizing & Proportions:**
-   - Extract exact dimensions from the design
-   - Maintain proper aspect ratios for images and containers
-   - Use object-fit: cover/contain appropriately
-   - Ensure buttons, inputs, and interactive elements have proper touch targets (min 44px)
-   - Scale elements proportionally across breakpoints
-
-6. **No Guessing:** Never use approximate or random values. Extract every position, size, and spacing value directly from the design.
-
-7. **Units Strategy:**
-   - Use px for exact desktop values
-   - Use rem, %, clamp, or viewport units for responsive/mobile
-   - Use CSS custom properties (variables) for consistent spacing
-   - Implement fluid scaling with clamp() for typography and spacing
-
-8. **Layout Techniques:**
-   - Use CSS Grid for complex layouts and alignment
-   - Use Flexbox for component-level layouts
-   - Use CSS Container Queries for component-based responsive design
-   - Implement proper stacking order and z-index
-   - Use CSS Grid areas for semantic layouts
-   - Implement proper aspect ratios and responsive containers
-   - Use CSS Grid template areas for complex responsive layouts
-   - Implement proper flex-grow, flex-shrink, and flex-basis for responsive flex layouts
-
-9. **Visual Design:**
-   - Colors: Use exact colors from the design (HEX or RGB)
-   - Fonts: Use exact or closest Google Fonts, with correct weights and styles
-   - Text: Use the exact text, capitalization, and line breaks in the same language as the design
-   - Images: Use provided filenames and exact sizes/positions. No placeholders
-   - Shadows, borders, and effects must match the design exactly
-
-10. **Accessibility & Performance:**
-     - Use semantic HTML elements
-     - Add proper alt text for all images
-     - Ensure proper color contrast ratios
-     - Use proper heading hierarchy (h1, h2, h3, etc.)
-     - Implement focus states for interactive elements
-     - Optimize for performance with efficient CSS
-     - Ensure proper ARIA labels and roles
-     - Implement keyboard navigation support
-     - Use proper form labels and associations
-
-11. **Cross-Browser Compatibility:**
-     - Use modern CSS with proper fallbacks
-     - Test layout on different browsers
-     - Ensure graceful degradation
-     - Use CSS feature queries (@supports) for progressive enhancement
-     - Implement proper vendor prefixes where needed
-     - Test on different devices and screen sizes
-
-**Output format:**
-{
-  "html": "Full HTML code only, no <style> or <script> tags, no inline CSS or JS.",
-  "css": "Full CSS code only, no HTML or JS. Must include all responsive rules, breakpoints, and ensure no overflow or cramped content.",
-  "js": "Full JavaScript code only, if needed for interactivity (empty string if not needed)."
-}
-
-**IMPORTANT:** Return ONLY the JSON object above. Do NOT include any explanations, Markdown, or extra text. The JSON must be valid and parseable. If you are unsure about any value, extract it directly from the image. Do NOT guess or approximate. This is a professional, production-grade, fully responsive conversion. Double-check that the result is visually balanced and comfortable on all devices, and that all element positions and spacing are exactly as in the design.`;
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, imageBase64 }),
-        });
-        if (!res.ok) throw new Error("AI code generation failed");
-        const data = await res.json();
-        // Try to parse the code from the AI response
-        let code: { html: string; css: string; js: string } | null = null;
-        try {
-          const text = data.choices?.[0]?.message?.content || "";
-          
-          // First, try to find JSON format
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            console.log("Found JSON match:", jsonMatch[0]);
-            
-            // Clean the JSON before parsing
-            let jsonStr = jsonMatch[0];
-            
-            // Fix escaped characters
-            jsonStr = jsonStr.replace(/\\n/g, '\n');
-            jsonStr = jsonStr.replace(/\\"/g, '"');
-            jsonStr = jsonStr.replace(/\\\\/g, '\\');
-            
-            // Remove other escaped characters that might cause issues
-            jsonStr = jsonStr.replace(/\\(.)/g, '$1');
             // Remove control characters that cause JSON parsing issues
             jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, '');
 
@@ -1156,7 +1067,7 @@ export default function Design2WebApp() {
               if (imgMatches.length > 0 && boundingBoxes.length > 0) {
                 let html = code.html;
                 for (let i = 0; i < imgMatches.length && i < boundingBoxes.length; i++) {
-                  const originalSrc = imgMatches[i][1];
+        
                   const uploadedUrl = boundingBoxes[i].uploadedUrl;
                   const box = boundingBoxes[i];
                   if (!uploadedUrl) continue;
@@ -1282,7 +1193,7 @@ export default function Design2WebApp() {
                     css: cssCode,
                     js: jsCode
                   };
-                  console.log("Extracted HTML directly:", code);
+    
                 } else {
                   setError("Failed to parse AI response for code generation.");
                 }
@@ -1326,8 +1237,8 @@ export default function Design2WebApp() {
               setError("No valid code found in AI response for code generation.");
             }
           }
-        } catch (e) {
-          console.error("Code parsing error:", e);
+        } catch (error) {
+          setError("Code parsing error:" + error);
           setError("Error parsing AI response for code generation.");
         }
         setGeneratedCode(code);
@@ -1408,9 +1319,6 @@ export default function Design2WebApp() {
     saveAs(content, "design2web-site.zip");
   }
 
-  // Helper: check if all bounding boxes have a high-res upload
-  const allBoxesHaveImages = boundingBoxes.length > 0 && boundingBoxes.every(box => !!box.uploadedUrl);
-
   // High-res image upload for each bounding box
   function handleBoxImageUpload(e: React.ChangeEvent<HTMLInputElement>, boxId: string) {
     const file = e.target.files?.[0];
@@ -1436,7 +1344,6 @@ export default function Design2WebApp() {
     }
   }
 
-  // Drawing new box
   function handleCanvasMouseDown(e: React.MouseEvent) {
     if (!image) return;
     const img = document.getElementById("design-img") as HTMLImageElement;
@@ -1834,7 +1741,7 @@ export default function Design2WebApp() {
                         </span>
                       </label>
                       {box.uploadedUrl && (
-                        <img src={box.uploadedUrl} alt={box.filename} className="w-12 h-12 object-cover rounded border border-pink-400/30" />
+                        <Image src={box.uploadedUrl} alt={box.filename} width={48} height={48} className="w-12 h-12 object-cover rounded border border-pink-400/30" unoptimized />
                       )}
                     </li>
                   ))}
