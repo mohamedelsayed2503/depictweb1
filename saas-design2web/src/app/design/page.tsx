@@ -8,20 +8,21 @@ import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
-import { FirebaseError } from 'firebase/app';
-
-function isFirebaseError(error: unknown): error is FirebaseError {
-  return (
-    error instanceof FirebaseError ||
-    (typeof error === 'object' && 
-     error !== null && 
-     'code' in error)
-  );
-}
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
 
-interface BoundingBox {
+// Placeholder for detected image areas (to be replaced by AI results)
+type DetectedImageArea = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  filename?: string;
+  uploadedUrl?: string;
+};
+
+type BoundingBox = {
   id: string;
   x: number;
   y: number;
@@ -312,6 +313,22 @@ export default function Design2WebApp() {
   const router = useRouter();
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [firebaseReady, setFirebaseReady] = useState(true);
+  const [showFadeIn, setShowFadeIn] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [showDesc, setShowDesc] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [showCanvas, setShowCanvas] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  useEffect(() => {
+    setTimeout(() => setShowTitle(true), 100);
+    setTimeout(() => setShowDesc(true), 400);
+    setTimeout(() => setShowUpload(true), 700);
+    setTimeout(() => setShowCanvas(true), 1000);
+    setTimeout(() => setShowInstructions(true), 1300);
+    setTimeout(() => setShowResults(true), 1600);
+  }, []);
+  useEffect(() => { setShowFadeIn(true); }, []);
   useEffect(() => {
     const authInstance: Auth | undefined = auth;
     const dbInstance: Firestore | undefined = db;
@@ -319,24 +336,82 @@ export default function Design2WebApp() {
       setFirebaseReady(false);
       setError("فشل الاتصال بـ Firebase. يرجى إعادة تحميل الصفحة أو التأكد من الاتصال بالإنترنت.");
       return;
+    } else {
+      setFirebaseReady(true);
     }
-  }, []);
-
-  // ...existing code...
-
-  // Move incrementUsage logic to a separate async function
+    const unsubscribe = authInstance.onAuthStateChanged(async (user) => {
+      if (!user) {
+        router.push("/home");
+        return;
+      }
+      try {
+        // Check daily usage
+        const today = new Date().toISOString().split('T')[0];
+        const userDocRef = doc(dbInstance, 'users', user.uid);
+        let userDoc;
+        let retries = 3;
+        while (retries > 0) {
+          try {
+            userDoc = await getDoc(userDocRef);
+            break;
+          } catch (err) {
+            if (err.code === 'unavailable') {
+              retries--;
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } else {
+              throw err;
+            }
+          }
+        }
+        if (userDoc && userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.last_date === today) {
+            if (data.count >= 3) {
+              setUsageExceeded(true);
+            }
+          } else {
+            // Reset for new day
+            await setDoc(userDocRef, { last_date: today, count: 0 }, { merge: true });
+          }
+        } else {
+          // Create new document or handle failure
+          try {
+            await setDoc(userDocRef, { last_date: today, count: 0 });
+          } catch (createErr) {
+            console.error("Failed to create user document:", createErr);
+            setUsageExceeded(true); // Assume exceeded if can't create
+          }
+        }
+      } catch (error) {
+        console.error("Firestore error:", error);
+        if (error.code === 'unavailable') {
+          setError('You appear to be offline. Please check your internet connection.');
+        }
+        // Optionally set an error state or notify user
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
   async function incrementUsage() {
+    const authInstance: Auth | undefined = auth;
+    const dbInstance: Firestore | undefined = db;
+    if (!authInstance || !dbInstance) {
+      setFirebaseReady(false);
+      setError("فشل الاتصال بـ Firebase. يرجى إعادة تحميل الصفحة أو التأكد من الاتصال بالإنترنت.");
+      return false;
+    }
+    const user = authInstance.currentUser;
     if (!user) return false;
     const today = new Date().toISOString().split('T')[0];
-    const userDocRef = doc(db, 'users', user.uid);
+    const userDocRef = doc(dbInstance, 'users', user.uid);
     let userDoc;
     let retries = 3;
     while (retries > 0) {
       try {
         userDoc = await getDoc(userDocRef);
         break;
-      } catch (err: unknown) {
-        if (isFirebaseError(err) && err.code === 'unavailable') {
+      } catch (err) {
+        if (err.code === 'unavailable') {
           retries--;
           await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
@@ -362,78 +437,17 @@ export default function Design2WebApp() {
     }
     return false;
   }
-
-  return (
-    <>
-      {/* Header with logo */}
-      <motion.header
-        className="w-full fixed top-0 left-0 z-50 bg-transparent flex items-center justify-between h-24 px-12"
-        style={{backdropFilter: 'blur(4px)'}}
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, type: 'spring', stiffness: 60, damping: 18 }}
-      >
-        <div className="flex items-center">
-          {/* Responsive logo: logo.png for desktop, logo-min.png for tablet/mobile */}
-          <picture>
-            <source srcSet="/logo-min.png" media="(max-width: 1023px)" />
-            <motion.img
-              src="/logo.png"
-              alt="Snappy AI Logo"
-              style={{ height: '150px', width: 'auto', display: 'block' }}
-              initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 14 }}
-            />
-          </picture>
-        </div>
-        {isLoggedIn && (
-          <div className="flex items-center gap-4">
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400/60 opacity-60 blur-sm cursor-not-allowed"
-              style={{ fontSize: '1.1rem', filter: 'blur(1px) grayscale(0.3)' }}
-              title="Connect GitHub (Coming Soon)"
-              disabled
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 10V7a4 4 0 10-8 0v3M5 10h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z" />
-              </svg>
-              <span className="hidden sm:inline">Connect GitHub</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold shadow-lg hover:scale-105 hover:shadow-pink-500/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400/60"
-              style={{ fontSize: '1.1rem' }}
-              title="Logout"
-              onClick={async () => {
-                await signOut(auth!);
-                router.push("/home");
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
-              </svg>
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        )}
-      </motion.header>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.7 }}
-        className="min-h-screen bg-gradient-to-b from-[#181824] via-[#2d1a3a] to-[#7b2ff2] flex flex-col items-center py-6 px-2 font-sans pt-36 md:pt-40"
-      >
-        {/* ...existing code... */}
-      </motion.div>
-    </>
-  );
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [zoom, setZoom] = useState(1);
   const [analyzed, setAnalyzed] = useState(false);
+  const [detectedImages, setDetectedImages] = useState<DetectedImageArea[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<{ html: string; css: string; js: string } | null>(null);
+  const [rawAIResponse, setRawAIResponse] = useState<string>("");
+  const [showRaw, setShowRaw] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [codeVersions, setCodeVersions] = useState<{ html: string; css: string; js: string }[]>([]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(-1);
@@ -443,7 +457,14 @@ export default function Design2WebApp() {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
+  const [resizing, setResizing] = useState<{ id: string; corner: string } | null>(null);
   const [boxLabelCounter, setBoxLabelCounter] = useState(1);
+  const [manualMode, setManualMode] = useState(false);
+  const [adjustments, setAdjustments] = useState<{ [key: string]: { x: number; y: number; width: number; height: number } }>(
+    {}
+  );
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonOpacity, setComparisonOpacity] = useState(0.5);
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);
   const [selectedVersionForDownload, setSelectedVersionForDownload] = useState<number>(-1);
@@ -475,26 +496,26 @@ export default function Design2WebApp() {
       // Force re-render of preview when images are uploaded
       const timer = setTimeout(() => {
         const iframe = document.querySelector('iframe');
-        const iframeDoc = iframe?.contentDocument;
-        if (iframe && iframeDoc) {
+        if (iframe && iframe.contentDocument) {
           boundingBoxes.forEach(box => {
             if (box.filename && box.uploadedUrl) {
-              const images = iframeDoc.querySelectorAll('img');
+              const images = iframe.contentDocument.querySelectorAll('img');
               images.forEach(img => {
                 const imgElement = img as HTMLImageElement;
-                if (box.filename && imgElement.src.includes(box.filename)) {
-                  if (box.uploadedUrl) {
-                    imgElement.src = box.uploadedUrl;
-                    imgElement.style.width = `${Math.round(box.width)}px`;
-                    imgElement.style.height = `${Math.round(box.height)}px`;
-                    imgElement.style.objectFit = 'cover';
-                    imgElement.onerror = () => {
-                      setError(`Failed to load image: ${box.filename}`);
-                      imgElement.style.border = '2px dashed red';
-                      imgElement.style.backgroundColor = '#fee';
-                      imgElement.alt = `Failed to load: ${box.filename}`;
-                    };
-                  }
+                if (imgElement.src.includes(box.filename)) {
+                  imgElement.src = box.uploadedUrl!;
+                  imgElement.style.width = `${Math.round(box.width)}px`;
+                  imgElement.style.height = `${Math.round(box.height)}px`;
+                  imgElement.style.objectFit = 'cover';
+                  imgElement.onerror = () => {
+                    console.log(`Failed to load image: ${box.filename}`);
+                    imgElement.style.border = '2px dashed red';
+                    imgElement.style.backgroundColor = '#fee';
+                    imgElement.alt = `Failed to load: ${box.filename}`;
+                  };
+                  imgElement.onload = () => {
+                    console.log(`Successfully loaded image: ${box.filename}`);
+                  };
                 }
               });
             }
@@ -504,7 +525,6 @@ export default function Design2WebApp() {
     
       return () => clearTimeout(timer);
     }
-    return () => {}; // Return empty cleanup function for cases where condition is not met
   }, [boundingBoxes, generatedCode]);
 
   async function handleAnalyzeModification(modificationRequest: string) {
@@ -512,6 +532,7 @@ export default function Design2WebApp() {
 
     setLoading(true);
     setError(null);
+    setRawAIResponse("");
 
     try {
       const currentCode = codeVersions[currentVersionIndex];
@@ -519,8 +540,70 @@ export default function Design2WebApp() {
         throw new Error("No current code version available for modification.");
       }
 
-      // Send request to backend
-      const response = await fetch("/api/analyze", {
+      const modificationPrompt = `You are a world-class expert in responsive, pixel-perfect web design. Your task is to analyze the provided HTML, CSS, and JavaScript code, and then apply the following modification: "${modificationRequest}". Generate production-ready, fully responsive, mobile-first HTML, CSS, and JavaScript code that incorporates this modification.\n\n**Critical requirements:**
+
+1. **Maintain Structure & Layout:**
+   - Keep the existing layout and structure, only apply the requested modification
+   - Preserve the visual hierarchy and element relationships
+   - Maintain the original spacing and positioning system
+   - Do not break existing responsive behavior
+
+2. **Responsive Design Enhancement:**
+   - The generated code must be fully responsive and look perfect on all screen sizes (desktop, tablet, mobile)
+   - Use mobile-first approach with proper breakpoints: mobile (320px+), tablet (768px+), desktop (1024px+)
+   - Ensure content adapts smoothly across all screen sizes
+   - No horizontal overflow or cramped content on any device
+   - Use modern CSS techniques: flexbox, grid, clamp(), min(), max(), container queries
+
+3. **Spacing & Layout Consistency:**
+   - Maintain consistent spacing between elements as in the original design
+   - Preserve the visual balance and composition
+   - Use CSS Grid gap, Flexbox gap, and proper margin/padding values
+   - Ensure proper whitespace and breathing room between sections
+   - Keep the same alignment (left, center, right) as the original
+
+4. **Element Positioning & Sizing:**
+   - Maintain exact positioning of elements relative to each other
+   - Preserve aspect ratios and proportions
+   - Scale elements proportionally across breakpoints
+   - Use object-fit appropriately for images
+   - Ensure proper touch targets for interactive elements (min 44px)
+
+5. **Modern CSS Techniques:**
+   - Use CSS Grid for complex layouts and alignment
+   - Use Flexbox for component-level layouts
+   - Use CSS Container Queries for component-based responsive design
+   - Implement fluid typography with clamp() for text scaling
+   - Use CSS custom properties (variables) for consistent spacing
+   - Use relative units (rem, em, %, vw, vh) for responsive sizing
+
+6. **Clean Code & Performance:**
+   - Use modern CSS techniques (media queries, flexbox, grid, clamp, etc.) to ensure the layout adapts smoothly
+   - Optimize for performance with efficient CSS
+   - Use semantic HTML elements
+   - Implement proper focus states for interactive elements
+   - Ensure proper color contrast ratios
+
+7. **No Breaking Changes:**
+   - Ensure the modification doesn't break existing functionality
+   - Maintain accessibility features
+   - Preserve existing interactive behaviors
+   - Keep the same visual design language
+
+8. **Cross-Browser Compatibility:**
+   - Use modern CSS with proper fallbacks
+   - Ensure graceful degradation
+   - Test layout on different browsers
+
+**Output format - Return ONLY this JSON object, no other text:**
+{
+  "html": "Full HTML code only, no <style> or <script> tags, no inline CSS or JS.",
+  "css": "Full CSS code only, no HTML or JS. Must include all responsive rules and breakpoints.",
+  "js": "Full JavaScript code only, if needed for interactivity (empty string if not needed)."
+}
+
+**CRITICAL:** Return ONLY the JSON object above. Do NOT include any explanations, Markdown, or extra text. The JSON must be valid and parseable.`;
+      const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -531,10 +614,12 @@ export default function Design2WebApp() {
         }),
       });
 
-      if (!response.ok) throw new Error("AI code modification failed");
-      const data = await response.json();
+      if (!res.ok) throw new Error("AI code modification failed");
+      const data = await res.json();
 
       const text = data.choices?.[0]?.message?.content || "";
+      setRawAIResponse(text);
+
       let code: { html: string; css: string; js: string } | null = null;
       try {
         console.log("Raw AI response:", text);
@@ -565,14 +650,14 @@ export default function Design2WebApp() {
             console.log("JSON parsing failed, attempting to fix...");
             
             // Fix unescaped quotes in CSS content
-            jsonStr = jsonStr.replace(/"css":"([\s\S]*?)"/g, (_match: string, cssContent: string) => {
+            jsonStr = jsonStr.replace(/"css":"([\s\S]*?)"/g, (match: string, cssContent: string) => {
               // Escape quotes within the CSS content
               const escapedCss = cssContent.replace(/"/g, '\\"');
               return `"css":"${escapedCss}"`;
             });
             
             // Also fix unescaped quotes in HTML content
-            jsonStr = jsonStr.replace(/"html":"([\s\S]*?)"/g, (_match: string, htmlContent: string) => {
+            jsonStr = jsonStr.replace(/"html":"([\s\S]*?)"/g, (match: string, htmlContent: string) => {
               // Escape quotes within the HTML content
               const escapedHtml = htmlContent.replace(/"/g, '\\"');
               return `"html":"${escapedHtml}"`;
@@ -594,11 +679,11 @@ export default function Design2WebApp() {
             // Remove extra quotes if present
             (['html', 'css', 'js'] as const).forEach((key) => {
             if (
-              code && typeof code[key] === 'string' &&
-              code[key].startsWith('"') &&
-              code[key].endsWith('"')
+              typeof code![key] === 'string' &&
+              code![key].startsWith('"') &&
+              code![key].endsWith('"')
             ) {
-              code[key] = code[key].slice(1, -1).replace(/\\"/g, '"');
+              code![key] = code![key].slice(1, -1).replace(/\\"/g, '"');
             }
           });
             
@@ -712,6 +797,7 @@ export default function Design2WebApp() {
       reader.onload = (ev) => setImage(ev.target?.result as string);
       reader.readAsDataURL(file);
       setAnalyzed(false);
+      setDetectedImages([]);
       setError(null);
       setGeneratedCode(null);
     }
@@ -733,6 +819,7 @@ export default function Design2WebApp() {
     if (!noImagesDesign && (boundingBoxes.length === 0 || !allBoxesHaveImages)) return;
     setLoading(true);
     setError(null);
+    setRawAIResponse("");
     try {
       // Convert design image to base64
       const reader = new FileReader();
@@ -788,6 +875,11 @@ export default function Design2WebApp() {
         
         // Debug: طباعة الـ response كامل
         // console.log("Full API Response:", data);
+        
+        // Show the raw AI response for debugging
+        const text = data.choices?.[0]?.message?.content || "";
+        // console.log("AI Response Text:", text);
+        setRawAIResponse(text);
         
         // Try to parse the code from the AI response
         let code: { html: string; css: string; js: string } | null = null;
@@ -900,8 +992,379 @@ export default function Design2WebApp() {
     }
   }
 
-  // ZIP download with uploaded images
+  function handleHighResUpload(e: React.ChangeEvent<HTMLInputElement>, areaId: string) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDetectedImages((prev) =>
+        prev.map((area) =>
+          area.id === areaId
+            ? { ...area, filename: file.name, uploadedUrl: URL.createObjectURL(file) }
+            : area
+        )
+      );
+    }
+  }
 
+  async function handleGenerateWebsite() {
+    if (!imageFile || usageExceeded) return;
+    if (!(await incrementUsage())) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageBase64 = (e.target?.result as string).split(",")[1];
+        // Compose the prompt for code generation
+        const prompt = `You are a world-class expert in responsive, pixel-perfect web design. Your task is to analyze the attached website design image and generate production-ready, fully responsive, mobile-first HTML, CSS, and JavaScript code that matches the design with 100% accuracy, pixel by pixel.\n\n**Critical requirements:**
+
+1. **Language Matching:** Use the exact same language as the text in the design. If the design contains English text, return English. If the design contains Arabic text, return Arabic. If the design contains any other language, return that language. Never translate or change the language of the text.
+
+2. **Element Positioning & Layout:**
+   - Every element must be placed in exactly the same position as in the design
+   - The layout and visual hierarchy must match the design pixel-for-pixel
+   - Do not shift, center, or reorder any element
+   - Use CSS Grid and Flexbox for precise positioning
+   - Ensure proper alignment (left, center, right) as shown in the design
+   - Maintain visual balance and composition
+
+3. **Spacing & Gaps (CRITICAL):**
+   - All spacing (margin, padding, gap) between elements and sections must be exactly as in the design
+   - No element should be too close or too far from another
+   - Maintain consistent, visually comfortable spacing everywhere
+   - If there is 32px between a heading and a section, use exactly 32px
+   - If a button is 24px below an image, use exactly 24px
+   - If two elements are side by side, the gap between them must match the design
+   - Use CSS Grid gap, Flexbox gap, and proper margin/padding values
+   - Ensure proper whitespace and breathing room between sections
+
+4. **Responsive Design (MOBILE-FIRST):**
+   - Code must be truly responsive and mobile-first
+   - Use modern CSS techniques: flexbox, grid, clamp(), min(), max(), container queries
+   - Implement proper breakpoints: mobile (320px+), tablet (768px+), desktop (1024px+), large desktop (1440px+)
+   - Ensure content adapts smoothly across all screen sizes
+   - No horizontal overflow or cramped content on any device
+   - Use relative units (rem, em, %, vw, vh) for responsive sizing
+   - Implement fluid typography with clamp() for text scaling
+   - Use CSS Grid auto-fit/auto-fill for responsive layouts
+   - Implement proper touch targets (min 44px) for mobile devices
+   - Use CSS Container Queries for component-based responsive design
+   - Ensure proper spacing and padding adjustments for different screen sizes
+
+5. **Element Sizing & Proportions:**
+   - Extract exact dimensions from the design
+   - Maintain proper aspect ratios for images and containers
+   - Use object-fit: cover/contain appropriately
+   - Ensure buttons, inputs, and interactive elements have proper touch targets (min 44px)
+   - Scale elements proportionally across breakpoints
+
+6. **No Guessing:** Never use approximate or random values. Extract every position, size, and spacing value directly from the design.
+
+7. **Units Strategy:**
+   - Use px for exact desktop values
+   - Use rem, %, clamp, or viewport units for responsive/mobile
+   - Use CSS custom properties (variables) for consistent spacing
+   - Implement fluid scaling with clamp() for typography and spacing
+
+8. **Layout Techniques:**
+   - Use CSS Grid for complex layouts and alignment
+   - Use Flexbox for component-level layouts
+   - Use CSS Container Queries for component-based responsive design
+   - Implement proper stacking order and z-index
+   - Use CSS Grid areas for semantic layouts
+   - Implement proper aspect ratios and responsive containers
+   - Use CSS Grid template areas for complex responsive layouts
+   - Implement proper flex-grow, flex-shrink, and flex-basis for responsive flex layouts
+
+9. **Visual Design:**
+   - Colors: Use exact colors from the design (HEX or RGB)
+   - Fonts: Use exact or closest Google Fonts, with correct weights and styles
+   - Text: Use the exact text, capitalization, and line breaks in the same language as the design
+   - Images: Use provided filenames and exact sizes/positions. No placeholders
+   - Shadows, borders, and effects must match the design exactly
+
+10. **Accessibility & Performance:**
+     - Use semantic HTML elements
+     - Add proper alt text for all images
+     - Ensure proper color contrast ratios
+     - Use proper heading hierarchy (h1, h2, h3, etc.)
+     - Implement focus states for interactive elements
+     - Optimize for performance with efficient CSS
+     - Ensure proper ARIA labels and roles
+     - Implement keyboard navigation support
+     - Use proper form labels and associations
+
+11. **Cross-Browser Compatibility:**
+     - Use modern CSS with proper fallbacks
+     - Test layout on different browsers
+     - Ensure graceful degradation
+     - Use CSS feature queries (@supports) for progressive enhancement
+     - Implement proper vendor prefixes where needed
+     - Test on different devices and screen sizes
+
+**Output format:**
+{
+  "html": "Full HTML code only, no <style> or <script> tags, no inline CSS or JS.",
+  "css": "Full CSS code only, no HTML or JS. Must include all responsive rules, breakpoints, and ensure no overflow or cramped content.",
+  "js": "Full JavaScript code only, if needed for interactivity (empty string if not needed)."
+}
+
+**IMPORTANT:** Return ONLY the JSON object above. Do NOT include any explanations, Markdown, or extra text. The JSON must be valid and parseable. If you are unsure about any value, extract it directly from the image. Do NOT guess or approximate. This is a professional, production-grade, fully responsive conversion. Double-check that the result is visually balanced and comfortable on all devices, and that all element positions and spacing are exactly as in the design.`;
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, imageBase64 }),
+        });
+        if (!res.ok) throw new Error("AI code generation failed");
+        const data = await res.json();
+        // Try to parse the code from the AI response
+        let code: { html: string; css: string; js: string } | null = null;
+        try {
+          const text = data.choices?.[0]?.message?.content || "";
+          
+          // First, try to find JSON format
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            console.log("Found JSON match:", jsonMatch[0]);
+            
+            // Clean the JSON before parsing
+            let jsonStr = jsonMatch[0];
+            
+            // Fix escaped characters
+            jsonStr = jsonStr.replace(/\\n/g, '\n');
+            jsonStr = jsonStr.replace(/\\"/g, '"');
+            jsonStr = jsonStr.replace(/\\\\/g, '\\');
+            
+            // Remove other escaped characters that might cause issues
+            jsonStr = jsonStr.replace(/\\(.)/g, '$1');
+            // Remove control characters that cause JSON parsing issues
+            jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, '');
+
+            // Remove backticks and fix JSON structure
+            jsonStr = jsonStr.replace(/```json\s*/, '').replace(/\s*```$/, '');
+            jsonStr = jsonStr.replace(/`/g, '"'); // Replace backticks with quotes
+            jsonStr = jsonStr.replace(/\n\s*\n/g, '\n'); // Remove extra newlines
+            jsonStr = jsonStr.replace(/,\s*}/g, '}'); // Remove trailing commas
+            jsonStr = jsonStr.replace(/,\s*]/g, ']'); // Remove trailing commas in arrays
+
+            // إصلاح مشكلة علامات الاقتباس المزدوجة داخل الـ HTML
+            // (تم حذف الاستبدال، نستخدم القيم كما هي)
+            // نفس الشيء للـ CSS و JS
+            // (تم حذف الاستبدال، نستخدم القيم كما هي)
+            
+            console.log("Cleaned JSON:", jsonStr);
+            
+            try {
+              const parsed = JSON.parse(jsonStr);
+              
+              // Convert arrays to strings if needed
+              code = {
+                html: Array.isArray(parsed.html) ? parsed.html.join('\n') : parsed.html,
+                css: parsed.css !== undefined ? (Array.isArray(parsed.css) ? parsed.css.join('\n') : parsed.css) : "",
+                js: parsed.js !== undefined ? (Array.isArray(parsed.js) ? parsed.js.join('\n') : parsed.js) : ""
+              };
+              
+              // إصلاح مشكلة علامات الاقتباس الزائدة في القيم
+              (['html', 'css', 'js'] as const).forEach((key) => {
+                if (
+                  typeof code![key] === 'string' &&
+                  code![key].startsWith('"') &&
+                  code![key].endsWith('"')
+                ) {
+                  code![key] = code![key].slice(1, -1).replace(/\\"/g, '"');
+                }
+              });
+
+              // === ربط الصور تلقائياً حسب الترتيب ===
+              // ابحث عن جميع src="..." في كود الـ HTML
+              const imgMatches = [...code.html.matchAll(/<img[^>]*src=["']([^"']+)["'][^>]*>/g)];
+              if (imgMatches.length > 0 && boundingBoxes.length > 0) {
+                let html = code.html;
+                for (let i = 0; i < imgMatches.length && i < boundingBoxes.length; i++) {
+                  const originalSrc = imgMatches[i][1];
+                  const uploadedUrl = boundingBoxes[i].uploadedUrl;
+                  const box = boundingBoxes[i];
+                  if (uploadedUrl) {
+                    // استبدل فقط أول تطابق لكل صورة
+                    html = html.replace(new RegExp(`(<img[^>]*src=["'])${originalSrc}(["'][^>]*>)`), `$1${uploadedUrl}$2`);
+                    
+                    // تعديل حجم الصورة لتطابق الحجم المحدد
+                    const escapedUrl = uploadedUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const imgTag = html.match(new RegExp(`<img[^>]*src=["']${escapedUrl}["'][^>]*>`));
+                    if (imgTag) {
+                      const newImgTag = imgTag[0].replace(
+                        /(style=["'][^"']*["'])/,
+                        `style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover; max-width: ${Math.round(box.width)}px; max-height: ${Math.round(box.height)}px;"`
+                      ).replace(
+                        /<img([^>]*)(src=["'][^"']*["'])([^>]*)>/g,
+                        `<img$1$2 style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover; max-width: ${Math.round(box.width)}px; max-height: ${Math.round(box.height)}px;"$3>`
+                      );
+                      html = html.replace(imgTag[0], newImgTag);
+                    }
+                  }
+                }
+                code.html = html;
+              }
+
+              // === Order-based image src replacement (most robust, always after code.html is set) ===
+              if (code && code.html && boundingBoxes && Array.isArray(boundingBoxes)) {
+                const imgMatches = [...code.html.matchAll(/<img[^>]*src=["'][^"']+["'][^>]*>/g)];
+                if (imgMatches.length > 0 && boundingBoxes.length > 0) {
+                  let html = code.html;
+                  const minCount = Math.min(imgMatches.length, boundingBoxes.length);
+                  for (let i = 0; i < minCount; i++) {
+                    const imgTag = imgMatches[i][0];
+                    const uploadedUrl = boundingBoxes[i].uploadedUrl;
+                    if (uploadedUrl) {
+                      const newImgTag = imgTag.replace(/src=["'][^"']+["']/, `src="${uploadedUrl}"`);
+                      html = html.replace(imgTag, newImgTag);
+                    }
+                  }
+                  code.html = html;
+                }
+              }
+
+              console.log("Parsed code:", code);
+            } catch (parseError) {
+              console.error("JSON parse error after cleaning:", parseError);
+              
+              // Try to extract HTML, CSS, and JS separately
+              const htmlMatch = text.match(/"html":\s*(\[[\s\S]*?\]|"[\s\S]*?\"),\s*"css"/);
+              const cssMatch = text.match(/"css":\s*(\[[\s\S]*?\]|"[\s\S]*?\"),\s*"js"/);
+              const jsMatch = text.match(/"js":\s*(\[[\s\S]*?\]|"[\s\S]*?\")/);
+              
+              if (htmlMatch && cssMatch) {
+                let htmlStr = htmlMatch[1];
+                let cssStr = cssMatch[1];
+                let jsStr = jsMatch ? jsMatch[1] : "[]";
+                
+                // Convert arrays to strings
+                if (htmlStr.startsWith('[') && htmlStr.endsWith(']')) {
+                  try {
+                    const htmlArray = JSON.parse(htmlStr);
+                    htmlStr = htmlArray.join('\n');
+                  } catch (e) {
+                    htmlStr = htmlStr.replace(/^\[|\]$/g, '').replace(/","/g, '\n').replace(/"/g, '');
+                  }
+                }
+                
+                if (cssStr.startsWith('[') && cssStr.endsWith(']')) {
+                  try {
+                    const cssArray = JSON.parse(cssStr);
+                    cssStr = cssArray.join('\n');
+                  } catch (e) {
+                    cssStr = cssStr.replace(/^\[|\]$/g, '').replace(/","/g, '\n').replace(/"/g, '');
+                  }
+                }
+                
+                if (jsStr.startsWith('[') && jsStr.endsWith(']')) {
+                  try {
+                    const jsArray = JSON.parse(jsStr);
+                    jsStr = jsArray.join('\n');
+                  } catch (e) {
+                    jsStr = jsStr.replace(/^\[|\]$/g, '').replace(/","/g, '\n').replace(/"/g, '');
+                  }
+                }
+                
+                code = {
+                  html: htmlStr.replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+                  css: cssStr.replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+                  js: jsStr.replace(/\\n/g, '\n').replace(/\\"/g, '"')
+                };
+                console.log("Extracted code manually:", code);
+              } else {
+                // If JSON parsing fails, try to extract HTML directly
+                console.log("JSON parsing failed, trying to extract HTML directly");
+                const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
+                const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
+                const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
+                
+                if (htmlMatch) {
+                  let htmlCode = htmlMatch[1].trim();
+                  let cssCode = cssMatch ? cssMatch[1].trim() : "";
+                  let jsCode = jsMatch ? jsMatch[1].trim() : "";
+                  
+                  // If no separate CSS/JS blocks found, try to extract from HTML
+                  if (!cssCode && !jsCode) {
+                    const styleMatch = htmlCode.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+                    const scriptMatch = htmlCode.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+                    
+                    if (styleMatch) {
+                      cssCode = styleMatch[1].trim();
+                      htmlCode = htmlCode.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
+                    }
+                    
+                    if (scriptMatch) {
+                      jsCode = scriptMatch[1].trim();
+                      htmlCode = htmlCode.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
+                    }
+                  }
+                  
+                  code = {
+                    html: htmlCode,
+                    css: cssCode,
+                    js: jsCode
+                  };
+                  console.log("Extracted HTML directly:", code);
+                } else {
+                  setError("Failed to parse AI response for code generation.");
+                }
+              }
+            }
+          } else {
+            // No JSON found, try to extract HTML directly
+            console.log("No JSON match found, trying to extract HTML directly");
+            const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
+            const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
+            const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
+            
+            if (htmlMatch) {
+              let htmlCode = htmlMatch[1].trim();
+              let cssCode = cssMatch ? cssMatch[1].trim() : "";
+              let jsCode = jsMatch ? jsMatch[1].trim() : "";
+              
+              // If no separate CSS/JS blocks found, try to extract from HTML
+              if (!cssCode && !jsCode) {
+                const styleMatch = htmlCode.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+                const scriptMatch = htmlCode.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+                
+                if (styleMatch) {
+                  cssCode = styleMatch[1].trim();
+                  htmlCode = htmlCode.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
+                }
+                
+                if (scriptMatch) {
+                  jsCode = scriptMatch[1].trim();
+                  htmlCode = htmlCode.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
+                }
+              }
+              
+              code = {
+                html: htmlCode,
+                css: cssCode,
+                js: jsCode
+              };
+              console.log("Extracted HTML directly:", code);
+            } else {
+              setError("No valid code found in AI response for code generation.");
+            }
+          }
+        } catch (e) {
+          console.error("Code parsing error:", e);
+          setError("Error parsing AI response for code generation.");
+        }
+        setGeneratedCode(code);
+        setGenerating(false);
+      };
+      reader.readAsDataURL(imageFile);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "Unknown error");
+      } else {
+        setError("Unknown error");
+      }
+      setGenerating(false);
+    }
   }
 
   // ZIP download with uploaded images
@@ -1216,7 +1679,7 @@ export default function Design2WebApp() {
           <label className="w-full flex flex-col items-center cursor-pointer">
             <input type="file" accept="image/png, image/jpeg" onChange={handleImageUpload} className="hidden" />
             <span className="px-8 py-3 rounded-xl font-bold text-white text-base sm:text-xl shadow-lg transition-all duration-200 mb-2 button-animate" style={{background: "linear-gradient(90deg, #ff6fd8 0%, #8854ff 100%)", boxShadow: "0 2px 16px 0 rgba(136,84,255,0.15)", border: "none"}}>Choose Image</span>
-            <span className="text-gray-300 text-xs sm:text-sm fade-in${showCanvas ? ' visible' : ''}">{imageFile ? imageFile.name : "No file chosen"}</span>
+            <span className="text-gray-300 text-xs sm:text-sm fade-in${showUpload ? ' visible' : ''}">{imageFile ? imageFile.name : "No file chosen"}</span>
           </label>
           <div className="mt-4 w-full flex items-center justify-center">
             <label className="flex items-center cursor-pointer group">
@@ -1644,7 +2107,7 @@ export default function Design2WebApp() {
                       setImageFile(null);
                       setZoom(1);
                       setAnalyzed(false);
-                      // Reset detected images is handled by boundingBoxes state
+                      setDetectedImages([]);
                       setLoading(false);
                       setError(null);
                       setGenerating(false);
@@ -1710,3 +2173,4 @@ export default function Design2WebApp() {
     </motion.div>
   </>
   );
+}
