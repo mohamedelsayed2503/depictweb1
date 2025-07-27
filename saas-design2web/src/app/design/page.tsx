@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import Image from "next/image";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { Rnd } from "react-rnd";
+// import { Rnd } from "react-rnd";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
@@ -325,22 +325,7 @@ export default function Design2WebApp() {
   const router = useRouter();
   const [usageExceeded, setUsageExceeded] = useState(false);
   const [firebaseReady, setFirebaseReady] = useState(true);
-  const [showFadeIn, setShowFadeIn] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-  const [showDesc, setShowDesc] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
-  const [showCanvas, setShowCanvas] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  useEffect(() => {
-    setTimeout(() => setShowTitle(true), 100);
-    setTimeout(() => setShowDesc(true), 400);
-    setTimeout(() => setShowUpload(true), 700);
-    setTimeout(() => setShowCanvas(true), 1000);
-    setTimeout(() => setShowInstructions(true), 1300);
-    setTimeout(() => setShowResults(true), 1600);
-  }, []);
-  useEffect(() => { setShowFadeIn(true); }, []);
+
   useEffect(() => {
     const authInstance: Auth | undefined = auth;
     const dbInstance: Firestore | undefined = db;
@@ -390,12 +375,10 @@ export default function Design2WebApp() {
           try {
             await setDoc(userDocRef, { last_date: today, count: 0 });
           } catch (createErr) {
-            console.error("Failed to create user document:", createErr);
             setUsageExceeded(true); // Assume exceeded if can't create
           }
         }
       } catch (error) {
-        console.error("Firestore error:", error);
         if (error.code === 'unavailable') {
           setError('You appear to be offline. Please check your internet connection.');
         }
@@ -520,13 +503,11 @@ export default function Design2WebApp() {
                   imgElement.style.height = `${Math.round(box.height)}px`;
                   imgElement.style.objectFit = 'cover';
                   imgElement.onerror = () => {
-                    console.log(`Failed to load image: ${box.filename}`);
                     imgElement.style.border = '2px dashed red';
                     imgElement.style.backgroundColor = '#fee';
                     imgElement.alt = `Failed to load: ${box.filename}`;
                   };
                   imgElement.onload = () => {
-                    console.log(`Successfully loaded image: ${box.filename}`);
                   };
                 }
               });
@@ -640,7 +621,7 @@ export default function Design2WebApp() {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           let jsonStr = jsonMatch[0];
-          console.log("Found JSON match:", jsonStr);
+  
           
           // Clean the JSON string - be more careful with escaping
           jsonStr = jsonStr.replace(/\\n/g, '\n');
@@ -656,10 +637,10 @@ export default function Design2WebApp() {
           // First, try to parse as-is
           try {
             JSON.parse(jsonStr);
-            console.log("JSON is already valid, no cleaning needed");
+
           } catch (e) {
             // If parsing fails, try to fix common issues
-            console.log("JSON parsing failed, attempting to fix...");
+
             
             // Fix unescaped quotes in CSS content
             jsonStr = jsonStr.replace(/"css":"([\s\S]*?)"/g, (match: string, cssContent: string) => {
@@ -680,7 +661,7 @@ export default function Design2WebApp() {
           
           try {
           const parsed = JSON.parse(jsonStr);
-            console.log("Parsed JSON:", parsed);
+
             
           code = {
               html: Array.isArray(parsed.html) ? parsed.html.join('\n') : (parsed.html || ''),
@@ -701,8 +682,7 @@ export default function Design2WebApp() {
             
             console.log("Final code:", code);
           } catch (parseError) {
-            console.error("JSON parse error:", parseError);
-            console.error("Failed JSON string:", jsonStr);
+
             
             // Try to extract content directly from the raw response
             try {
@@ -1164,7 +1144,7 @@ export default function Design2WebApp() {
             // نفس الشيء للـ CSS و JS
             // (تم حذف الاستبدال، نستخدم القيم كما هي)
             
-            console.log("Cleaned JSON:", jsonStr);
+
             
             try {
               const parsed = JSON.parse(jsonStr);
@@ -1179,11 +1159,11 @@ export default function Design2WebApp() {
               // إصلاح مشكلة علامات الاقتباس الزائدة في القيم
               (['html', 'css', 'js'] as const).forEach((key) => {
                 if (
-                  typeof code![key] === 'string' &&
-                  code![key].startsWith('"') &&
-                  code![key].endsWith('"')
+                  typeof code[key] === 'string' &&
+                  code[key].startsWith('"') &&
+                  code[key].endsWith('"')
                 ) {
-                  code![key] = code![key].slice(1, -1).replace(/\\"/g, '"');
+                  code[key] = code[key].slice(1, -1).replace(/\\"/g, '"');
                 }
               });
 
@@ -1196,6 +1176,7 @@ export default function Design2WebApp() {
                   const originalSrc = imgMatches[i][1];
                   const uploadedUrl = boundingBoxes[i].uploadedUrl;
                   const box = boundingBoxes[i];
+                  if (!uploadedUrl) continue;
                   if (uploadedUrl) {
                     // استبدل فقط أول تطابق لكل صورة
                     html = html.replace(new RegExp(`(<img[^>]*src=["'])${originalSrc}(["'][^>]*>)`), `$1${uploadedUrl}$2`);
@@ -1227,6 +1208,7 @@ export default function Design2WebApp() {
                   for (let i = 0; i < minCount; i++) {
                     const imgTag = imgMatches[i][0];
                     const uploadedUrl = boundingBoxes[i].uploadedUrl;
+                    if (!uploadedUrl) continue;
                     if (uploadedUrl) {
                       const newImgTag = imgTag.replace(/src=["'][^"']+["']/, `src="${uploadedUrl}"`);
                       html = html.replace(imgTag, newImgTag);
