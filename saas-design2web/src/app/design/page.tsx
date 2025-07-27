@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback, memo } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { Rnd } from "react-rnd";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
@@ -72,7 +73,7 @@ const MemoizedPreview = memo(({ html, css, js, boundingBoxes }: {
   let htmlBody = previewHtml;
   const bodyMatch = previewHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   if (bodyMatch) {
-    htmlBody = bodyMatch && bodyMatch[1] ? bodyMatch[1] : "";
+    htmlBody = bodyMatch[1];
   }
 
   // 2. استبدل الصور المرفوعة وأضف أبعادها حسب الترتيب
@@ -80,13 +81,13 @@ let imgIndex = 0;
 htmlBody = htmlBody.replace(/<img[^>]*>/g, (match) => {
   if (imgIndex < boundingBoxes.length) {
     const box = boundingBoxes[imgIndex];
-    if (box?.uploadedUrl) {
+    if (box.uploadedUrl) {
       imgIndex++;
       return match
-        .replace(/src=["'][^"']*["']/, `src="${box.uploadedUrl}"`)
-        .replace(/style=["'][^"']*["']/, '')
-        .replace(/>$/, ` style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover;">`)
-        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`);
+        .replace(/src=["'][^"']*["']/, `src="${box.uploadedUrl}"`) // استبدال مصدر الصورة
+        .replace(/style=["'][^"']*["']/, '') // إزالة أي ستايل موجود
+        .replace(/>$/, ` style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover;">`) // إضافة الأبعاد
+        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`) ; // تحديث النص البديل
     }
   }
   return match;
@@ -302,6 +303,17 @@ EditPrompt.displayName = 'EditPrompt';
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0 }
+};
+const buttonVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+  hover: { scale: 1.08, boxShadow: "0 8px 32px 0 rgba(136,84,255,0.25)" },
+  tap: { scale: 0.96 }
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+  hover: { scale: 1.04, boxShadow: "0 8px 32px 0 rgba(136,84,255,0.25)" }
 };
 const errorVariants = {
   hidden: { opacity: 0, y: -20 },
@@ -1604,54 +1616,37 @@ export default function Design2WebApp() {
         transition={{ delay: 0.1, type: 'spring', stiffness: 60, damping: 18 }}
       >
         <div className="flex items-center">
-          {/* Responsive logo: logo.png for desktop, logo-min.png for tablet/mobile */}
-          <picture>
-            <source srcSet="/logo-min.png" media="(max-width: 1023px)" />
-            <motion.img
-              src="/logo.png"
-              alt="Snappy AI Logo"
-              style={{ height: '150px', width: 'auto', display: 'block' }}
-              initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 14 }}
-            />
-          </picture>
+          <motion.img
+            src="/logo.png"
+            alt="Snappy AI Logo"
+            style={{ height: '160px', width: 'auto', display: 'block' }}
+            initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 14 }}
+          />
         </div>
         {isLoggedIn && (
-          <div className="flex items-center gap-4">
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white font-bold shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400/60 opacity-60 blur-sm cursor-not-allowed"
-              style={{ fontSize: '1.1rem', filter: 'blur(1px) grayscale(0.3)' }}
-              title="Connect GitHub (Coming Soon)"
-              disabled
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 10V7a4 4 0 10-8 0v3M5 10h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z" />
-              </svg>
-              <span className="hidden sm:inline">Connect GitHub</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold shadow-lg hover:scale-105 hover:shadow-pink-500/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400/60"
-              style={{ fontSize: '1.1rem' }}
-              title="Logout"
-              onClick={async () => {
-                await signOut(auth!);
-                router.push("/home");
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
-              </svg>
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-400 to-purple-500 text-white font-bold shadow-lg hover:scale-105 hover:shadow-pink-500/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400/60"
+            style={{ fontSize: '1.1rem' }}
+            title="Logout"
+            onClick={async () => {
+              await signOut(auth!);
+              router.push("/home");
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+            </svg>
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         )}
       </motion.header>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7 }}
-        className="min-h-screen bg-gradient-to-b from-[#181824] via-[#2d1a3a] to-[#7b2ff2] flex flex-col items-center py-6 px-2 font-sans pt-36 md:pt-40"
+        className="min-h-screen bg-gradient-to-b from-[#181824] via-[#2d1a3a] to-[#7b2ff2] flex flex-col items-center py-6 px-2 font-sans pt-24"
       >
         <motion.h1
           variants={fadeInUp}
@@ -1914,7 +1909,7 @@ export default function Design2WebApp() {
             <div className="text-xs text-red-300 mt-2">
               {loading && "Analysis in progress, please wait..."}
               {usageExceeded && "You have exhausted your daily attempts. Please try again tomorrow."}
-              {!noImagesDesign && !allBoxesHaveImages && "Please upload a high-resolution image for each box before analysis."}
+              {!noImagesDesign && !allBoxesHaveImages && "يرجى تحميل صور عالية الدقة لكل الصناديق قبل التحليل."}
             </div>
               </motion.div>
             )}
@@ -2148,7 +2143,7 @@ export default function Design2WebApp() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.2, type: 'spring', stiffness: 60, damping: 18 }}
       >
-        © {new Date().getFullYear()} depict web. All rights reserved.
+        © {new Date().getFullYear()} Snappy AI. All rights reserved.
       </motion.footer>
       <style jsx global>{`
         .fade-in {

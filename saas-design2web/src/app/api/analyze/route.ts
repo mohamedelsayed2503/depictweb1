@@ -7,7 +7,6 @@ import { sanitizeInput, logSecurityEvent, getClientIP } from "@/lib/security";
 declare var process: {
   env: {
     GEMINI_API_KEY?: string;
-    NODE_ENV?: string;
   };
 };
 
@@ -38,7 +37,7 @@ function validateRequest(data: any): data is AnalyzeRequest {
   }
   
   if (data.imageBase64 && data.imageBase64.length > 10 * 1024 * 1024) {
-    return false; // Limit image size to 10MBنع
+    return false; // Limit image size to 10MB
   }
   
   return true;
@@ -53,11 +52,7 @@ export async function POST(req: NextRequest) {
     try {
       requestData = await req.json();
     } catch (error) {
-      logSecurityEvent(
-        'INVALID_JSON_REQUEST',
-        { error: error instanceof Error ? error.message : String(error) },
-        clientIP
-      );
+      logSecurityEvent('INVALID_JSON_REQUEST', { error: error.message }, clientIP);
       return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
     }
     
@@ -161,15 +156,15 @@ ${sanitizedJs || ''}
       const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
       const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
       const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
-      extractedHtml = htmlMatch && htmlMatch[1] ? htmlMatch[1].trim() : "";
-      extractedCss = cssMatch && cssMatch[1] ? cssMatch[1].trim() : "";
-      extractedJs = jsMatch && jsMatch[1] ? jsMatch[1].trim() : "";
+      extractedHtml = htmlMatch ? htmlMatch[1].trim() : "";
+      extractedCss = cssMatch ? cssMatch[1].trim() : "";
+      extractedJs = jsMatch ? jsMatch[1].trim() : "";
       // إذا لم يوجد CSS منفصل، حاول استخراج <style> من HTML
       if (!extractedCss && extractedHtml) {
         const styleMatch = extractedHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-        if (styleMatch && styleMatch[1]) {
+        if (styleMatch) {
           extractedCss = styleMatch[1].trim();
-          extractedHtml = extractedHtml ? extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '') : "";
+          extractedHtml = extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
         }
       }
       // إذا لم يوجد أي شيء، حاول التقاط أول كود JSON أو CSS أو JS كسطر واحد
@@ -201,15 +196,15 @@ ${sanitizedJs || ''}
 
     return NextResponse.json(data);
     
-  } catch (error) {
+  } catch (error: any) {
     // Log error without exposing sensitive information
     logSecurityEvent('API_ERROR', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error && process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || 'Unknown error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, clientIP);
     
     console.error('[API Error]', {
-      message: error instanceof Error ? error.message : String(error),
+      message: error.message,
       clientIP,
       timestamp: new Date().toISOString()
     });
