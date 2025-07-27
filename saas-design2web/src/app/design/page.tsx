@@ -304,17 +304,7 @@ const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0 }
 };
-const buttonVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-  hover: { scale: 1.08, boxShadow: "0 8px 32px 0 rgba(136,84,255,0.25)" },
-  tap: { scale: 0.96 }
-};
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-  hover: { scale: 1.04, boxShadow: "0 8px 32px 0 rgba(136,84,255,0.25)" }
-};
+
 const errorVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: { opacity: 1, y: 0 },
@@ -374,7 +364,7 @@ export default function Design2WebApp() {
           // Create new document or handle failure
           try {
             await setDoc(userDocRef, { last_date: today, count: 0 });
-          } catch (createErr) {
+          } catch (error) {
             setUsageExceeded(true); // Assume exceeded if can't create
           }
         }
@@ -436,13 +426,9 @@ export default function Design2WebApp() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [zoom, setZoom] = useState(1);
   const [analyzed, setAnalyzed] = useState(false);
-  const [detectedImages, setDetectedImages] = useState<DetectedImageArea[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<{ html: string; css: string; js: string } | null>(null);
-  const [rawAIResponse, setRawAIResponse] = useState<string>("");
-  const [showRaw, setShowRaw] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [codeVersions, setCodeVersions] = useState<{ html: string; css: string; js: string }[]>([]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(-1);
@@ -452,13 +438,10 @@ export default function Design2WebApp() {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
-  const [resizing, setResizing] = useState<{ id: string; corner: string } | null>(null);
   const [boxLabelCounter, setBoxLabelCounter] = useState(1);
-  const [manualMode, setManualMode] = useState(false);
   const [adjustments, setAdjustments] = useState<{ [key: string]: { x: number; y: number; width: number; height: number } }>(
     {}
   );
-  const [showComparison, setShowComparison] = useState(false);
   const [comparisonOpacity, setComparisonOpacity] = useState(0.5);
   const [noImagesDesign, setNoImagesDesign] = useState(false);
   const [isFinalDesignSelected, setIsFinalDesignSelected] = useState(false);

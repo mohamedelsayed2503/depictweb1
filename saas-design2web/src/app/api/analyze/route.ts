@@ -19,7 +19,7 @@ interface AnalyzeRequest {
   js?: string;
 }
 
-function validateRequest(data: any): data is AnalyzeRequest {
+function validateRequest(data: unknown): data is AnalyzeRequest {
   if (!data || typeof data !== 'object') {
     return false;
   }
@@ -178,7 +178,7 @@ ${sanitizedJs || ''}
         extractedJs = text.match(/(function|const|let|var|=>)[\s\S]*/)?.[0] || "";
       }
     }
-  } catch (e) {
+  } catch (error) {
     extractedHtml = "";
     extractedCss = "";
     extractedJs = "";
@@ -196,6 +196,7 @@ ${sanitizedJs || ''}
 
     return NextResponse.json(data);
     
+
   } catch (error: any) {
     // Log error without exposing sensitive information
     logSecurityEvent('API_ERROR', {
