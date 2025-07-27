@@ -1964,5 +1964,5 @@ export default function Design2WebApp() {
       `}</style>
     </motion.div>
   </>
-  );
+
 }
