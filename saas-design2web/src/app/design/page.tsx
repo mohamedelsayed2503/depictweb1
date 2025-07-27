@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback, memo } from "react";
+import Image from "next/image";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { Rnd } from "react-rnd";
@@ -11,6 +12,7 @@ import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
+import Image from "next/image";
 
 // Placeholder for detected image areas (to be replaced by AI results)
 type DetectedImageArea = {
@@ -1631,7 +1633,7 @@ export default function Design2WebApp() {
             style={{ fontSize: '1.1rem' }}
             title="Logout"
             onClick={async () => {
-              await signOut(auth!);
+              await signOut(auth as any);
               router.push("/home");
             }}
           >
@@ -1747,22 +1749,22 @@ export default function Design2WebApp() {
               onMouseMove={drawing ? handleCanvasMouseMove : activeBoxId ? handleCanvasDragMove : undefined}
               onMouseUp={drawing ? handleCanvasMouseUp : activeBoxId ? handleCanvasDragUp : undefined}
             >
-              <img
+              <Image
                 id="design-img"
-                src={image}
+                src={image || "/placeholder.png"}
                 alt="Uploaded design"
+                width={800} // Placeholder, adjust as needed
+                height={600} // Placeholder, adjust as needed
                 style={{
                   transform: `scale(${zoom})`,
                   transformOrigin: "top left",
                   display: "block",
                   maxWidth: "100%",
                   maxHeight: "75vh",
-                  width: "auto",
-                  height: "auto",
+                  objectFit: "contain",
                   borderRadius: "1rem",
                   boxShadow: "0 2px 16px 0 rgba(136,84,255,0.15)"
                 }}
-                draggable={false}
               />
               {/* Draw bounding boxes */}
               {boundingBoxes.map((box) => (
@@ -1824,9 +1826,11 @@ export default function Design2WebApp() {
           >
             <h2 className="text-lg font-semibold mb-4 text-pink-200 text-center">Design Preview</h2>
             <div className="flex justify-center">
-              <img
-                src={image}
+              <Image
+                src={image || "/placeholder.png"}
                 alt="Uploaded design"
+                width={800} // Placeholder, adjust as needed
+                height={600} // Placeholder, adjust as needed
                 className="max-w-full max-h-96 object-contain rounded-lg shadow-lg"
               />
             </div>

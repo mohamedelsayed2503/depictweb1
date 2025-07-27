@@ -1,10 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
+
 import type { Auth } from "firebase/auth";
 import type { AuthError } from "firebase/auth";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 // Logo image import (public folder)
 // The image should be placed at /public/logo.png or /public/logo.svg
 
@@ -14,16 +15,13 @@ export default function Home() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-  const [showDesc, setShowDesc] = useState(false);
-  const [showButton, setShowButton] = useState(false);
-  const [showFeatures, setShowFeatures] = useState(false);
+
 
   // Initialize Firebase auth on client-side only
   useEffect(() => {
     const initFirebase = async () => {
       const { auth } = await import('@/lib/firebase');
-      const { GoogleAuthProvider } = await import('firebase/auth');
+
       setAuth(auth);
       setIsClient(true);
     };
@@ -36,7 +34,7 @@ export default function Home() {
     
     try {
       setLoginError(null);
-      const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+      const { signInWithPopup } = await import('firebase/auth');
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       setShowLogin(false);
@@ -105,14 +103,20 @@ export default function Home() {
           {/* Responsive logo: logo.png for desktop, logo-min.png for tablet/mobile */}
           <picture>
             <source srcSet="/logo-min.png" media="(max-width: 1023px)" />
-            <motion.img
-              src="/logo.png"
-              alt="Snappy AI Logo"
-              style={{ height: '150px', width: 'auto', display: 'block' }}
+            <motion.div
               initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ delay: 0.3, type: 'spring', stiffness: 80, damping: 14 }}
-            />
+            >
+              <Image
+                src="/logo.png"
+                alt="Snappy AI Logo"
+                width={150} // Adjust based on your logo's aspect ratio
+                height={150} // Adjust based on your logo's aspect ratio
+                style={{ height: '150px', width: 'auto', display: 'block' }}
+                unoptimized // Use unoptimized for local assets or if you handle optimization externally
+              />
+            </motion.div>
           </picture>
         </div>
       </motion.header>
