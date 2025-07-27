@@ -36,6 +36,9 @@ const nextConfig: NextConfig = {
   },
   
   // Experimental features for security
+  experimental: {
+    // serverComponentsExternalPackages: ['@google/genai'], // Deprecated
+  },
   serverExternalPackages: ['@google/genai'],
   
   // Headers for additional security
