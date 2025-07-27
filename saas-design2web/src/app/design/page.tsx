@@ -12,7 +12,6 @@ import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
-import Image from "next/image";
 
 // Placeholder for detected image areas (to be replaced by AI results)
 type DetectedImageArea = {
