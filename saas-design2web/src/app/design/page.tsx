@@ -87,7 +87,7 @@ htmlBody = htmlBody.replace(/<img[^>]*>/g, (match) => {
         .replace(/src=["'][^"']*["']/, `src="${box.uploadedUrl}"`) // استبدال مصدر الصورة
         .replace(/style=["'][^"']*["']/, '') // إزالة أي ستايل موجود
         .replace(/>$/, ` style="width: ${Math.round(box.width)}px; height: ${Math.round(box.height)}px; object-fit: cover;">`) // إضافة الأبعاد
-        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`) ; // تحديث النص البديل
+        .replace(/alt=["'][^"']*["']/, `alt="${box.label}"`) // تحديث النص البديل
     }
   }
   return match;
@@ -106,7 +106,7 @@ htmlBody = htmlBody.replace(/<img[^>]*>/g, (match) => {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-          }
+
           
           html {
             font-size: 16px;
@@ -237,7 +237,7 @@ htmlBody = htmlBody.replace(/<img[^>]*>/g, (match) => {
       sandbox="allow-scripts allow-same-origin"
       title="Live Preview"
     />
-  );
+)
 });
 
 MemoizedPreview.displayName = 'MemoizedPreview';
@@ -962,67 +962,7 @@ export default function Design2WebApp() {
       }
       setLoading(false);
     }
-          }
-        } catch (error) {
-          setError("Error parsing AI response. Check debug output below.");
-        }
-        if (code) {
-          // إضافة ربط الـ CSS والـ JS تلقائياً إذا لم يكن موجوداً
-          let htmlWithLinks = code.html;
-          
-          // أضف رابط style.css إذا لم يكن موجوداً
-          if (!/href=["']style\.css["']/.test(htmlWithLinks)) {
-            htmlWithLinks = htmlWithLinks.replace(/<head[^>]*>/i, match => `${match}\n<link rel="stylesheet" href="style.css">`);
-          }
-          
-          // أضف script.js إذا لم يكن موجوداً
-          if (!/src=["']script\.js["']/.test(htmlWithLinks)) {
-            htmlWithLinks = htmlWithLinks.replace(/<\/body>/i, `  <script src="script.js"></script>\n<\/body>`);
-          }
-          
-          // إذا لم يكن هناك <head> أو <body>، أضفهم
-          if (!/<head[^>]*>/i.test(htmlWithLinks)) {
-            htmlWithLinks = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Design to Web</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    ${htmlWithLinks}
-    <script src="script.js"></script>
-</body>
-</html>`;
-          }
-          
-          const codeWithLinks = {
-            ...code,
-            html: htmlWithLinks
-          };
-          
-          setGeneratedCode(codeWithLinks);
-        setAnalyzed(true);
-        setLoading(false);
-        
-        // حفظ النسخة الجديدة من الكود
-          setCodeVersions(prev => [...prev, codeWithLinks]);
-          setCurrentVersionIndex(prev => prev + 1);
-        } else {
-          setLoading(false);
-        }
-      };
-      reader.readAsDataURL(imageFile);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error.message || "Unknown error");
-      } else {
-        setError("Unknown error");
-      }
-      setLoading(false);
-    }
-  }
+
             // Remove control characters that cause JSON parsing issues
             jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, '');
 
@@ -1199,15 +1139,7 @@ export default function Design2WebApp() {
                 }
               }
             }
-          } else {
-            // No JSON found, try to extract HTML directly
-            console.log("No JSON match found, trying to extract HTML directly");
-            const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/);
-            const cssMatch = text.match(/```css\s*([\s\S]*?)\s*```/);
-            const jsMatch = text.match(/```javascript\s*([\s\S]*?)\s*```/);
-            
-            if (htmlMatch) {
-              let htmlCode = htmlMatch[1].trim();
+
               let cssCode = cssMatch ? cssMatch[1].trim() : "";
               let jsCode = jsMatch ? jsMatch[1].trim() : "";
               
@@ -1233,17 +1165,8 @@ export default function Design2WebApp() {
                 js: jsCode
               };
               console.log("Extracted HTML directly:", code);
-            } else {
-              setError("No valid code found in AI response for code generation.");
-            }
-          }
-        } catch (error) {
-          setError("Code parsing error:" + error);
-          setError("Error parsing AI response for code generation.");
-        }
-        setGeneratedCode(code);
-        setGenerating(false);
-      };
+
+
       reader.readAsDataURL(imageFile);
     } catch (err: unknown) {
       if (err instanceof Error) {
